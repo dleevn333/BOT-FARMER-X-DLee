@@ -1,0 +1,12 @@
+# Local builds and user preferences
+**/obj/
+*.exe
+*.dll
+*.obj
+*.res
+*.pdb
+*.ilk
+imgui.ini
+settings/
+*.tmp.*
+__pycache__/
