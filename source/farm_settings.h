@@ -16,6 +16,8 @@ struct FarmPreferences {
     std::array<bool, 31> crops{};
     std::array<bool, 29> seeds{};
     std::array<bool, 8> tools{};
+    bool plant = false;
+    std::array<bool, 34> plantingSeeds{};
     bool weather = false;
     int weatherMap = -1;
 };
@@ -29,7 +31,7 @@ inline std::string FarmEncodeChoices(const std::array<bool, N>& values) {
 
 inline std::string FarmEncodePreferences(const FarmPreferences& p) {
     std::ostringstream out;
-    out << "version=1\n"
+    out << "version=2\n"
         << "sell=" << p.sell << "\n"
         << "harvest=" << p.harvest << "\n"
         << "purple_name=" << p.purpleName << "\n"
@@ -40,6 +42,8 @@ inline std::string FarmEncodePreferences(const FarmPreferences& p) {
         << "crops=" << FarmEncodeChoices(p.crops) << "\n"
         << "seeds=" << FarmEncodeChoices(p.seeds) << "\n"
         << "tools=" << FarmEncodeChoices(p.tools) << "\n"
+        << "plant=" << p.plant << "\n"
+        << "planting_seeds=" << FarmEncodeChoices(p.plantingSeeds) << "\n"
         << "weather=" << p.weather << "\n"
         << "weather_map=" << p.weatherMap << "\n";
     return out.str();
@@ -66,7 +70,7 @@ inline bool FarmDecodePreferences(const std::string& text, FarmPreferences& resu
         if (separator == std::string::npos || separator == 0) return false;
         if (!fields.emplace(line.substr(0, separator), line.substr(separator + 1)).second) return false;
     }
-    if (fields["version"] != "1") return false;
+    if (fields["version"] != "1" && fields["version"] != "2") return false;
     FarmPreferences p;
     auto boolean = [&](const char* key, bool& value) {
         auto found = fields.find(key);
@@ -87,6 +91,8 @@ inline bool FarmDecodePreferences(const std::string& text, FarmPreferences& resu
     if (!FarmDecodeChoices(fields["crops"], p.crops)
         || !FarmDecodeChoices(fields["seeds"], p.seeds)
         || !FarmDecodeChoices(fields["tools"], p.tools)) return false;
+    if (fields["version"] == "2" && (!boolean("plant", p.plant)
+        || !FarmDecodeChoices(fields["planting_seeds"], p.plantingSeeds))) return false;
     result = p;
     return true;
 }

@@ -7,7 +7,7 @@
 #include <winrt/Windows.Storage.Streams.h>
 #include <cctype>
 
-struct FarmOcrWord { std::string text; cv::Rect box; };
+struct FarmOcrWord { std::string text; cv::Rect box; std::wstring raw; };
 
 inline std::string FarmNormalize(std::wstring text) {
     for (auto& ch : text) if (ch == L'đ' || ch == L'Đ') ch = L'd';
@@ -48,7 +48,7 @@ inline std::vector<FarmOcrWord> FarmReadText(const cv::Mat& input, cv::Rect roi)
             auto b = word.BoundingRect();
             words.push_back({FarmNormalize(std::wstring(word.Text())), cv::Rect(
                 roi.x + int(b.X / 2), roi.y + int(b.Y / 2),
-                int(b.Width / 2), int(b.Height / 2))});
+                int(b.Width / 2), int(b.Height / 2)), std::wstring(word.Text())});
         }
     } catch (...) { /* Existing image recognition remains available if OCR is unavailable. */ }
     return words;

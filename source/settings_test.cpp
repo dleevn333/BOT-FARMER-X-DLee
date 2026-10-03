@@ -25,6 +25,8 @@ int main(int argc, char** argv) {
         first.thuHoachBangTenTim = true;
         first.kichHoatMuaHat = true;
         first.kichHoatMuaCongCu = true;
+        first.kichHoatTrongCay = true;
+        first.cacHatCanTrong[0] = first.cacHatCanTrong[33] = true;
         first.cacHatDuocChon[0] = first.cacHatDuocChon[30] = true;
         first.cacHatCanMua[0] = first.cacHatCanMua[28] = true;
         first.cacCongCuCanMua[0] = first.cacCongCuCanMua[7] = true;
@@ -52,6 +54,20 @@ int main(int argc, char** argv) {
         FarmLoadPreferences(secondReopened);
         CheckSame(second, secondReopened, "Second instance restores its own choices");
         auto valid = FarmEncodePreferences(FarmGetPreferences(second));
+        auto legacy = FarmEncodePreferences(FarmGetPreferences(first));
+        legacy.replace(legacy.find("version=2"),9,"version=1");
+        for(const std::string key:{"plant=", "planting_seeds="}) {
+            auto at=legacy.find(key);
+            legacy.erase(at,legacy.find('\n',at)-at+1);
+        }
+        FarmPreferences migrated;
+        Check(FarmDecodePreferences(legacy,migrated),"Read previous v0.1.1 schema");
+        Check(migrated.harvest && migrated.buySeeds && !migrated.plant,"Keep old choices without enabling new planting");
+        Check(std::none_of(migrated.plantingSeeds.begin(),migrated.plantingSeeds.end(),[](bool x){return x;}),"Legacy planting selection stays empty");
+        auto badPlant=valid;
+        auto plantAt=badPlant.find("planting_seeds=");
+        badPlant.erase(plantAt+std::string("planting_seeds=").size(),1);
+        Check(!FarmDecodePreferences(badPlant,migrated),"Reject incomplete planting choices");
         for (int mode : {0, 1, 2}) {
             FarmPreferences expected;
             expected.harvestMode = mode;

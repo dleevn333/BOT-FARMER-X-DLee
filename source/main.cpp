@@ -19,6 +19,7 @@
 #include <atomic>
 #include "farm_ocr.h"
 #include "farm_settings.h"
+#include "farm_plant_vision.h"
 #include <filesystem>
 #include <fstream>
 #include <algorithm>
@@ -122,6 +123,10 @@ struct ThongTinTool {
     bool kichHoatMuaCongCu = false;
     bool kichHoatThuHoachNhanh = false;
     bool thuHoachBangTenTim = false;
+    bool kichHoatTrongCay = false;
+    bool cacHatCanTrong[SO_HAT_TRONG] = {};
+    unsigned long long henTrongCay = 0;
+    int soCayVuaTrong = 0;
 
     long long time_cho_hoi_qua = 0;
     int buocHienTai = 0;
@@ -199,6 +204,8 @@ FarmPreferences FarmGetPreferences(const ThongTinTool& tool) {
     p.buySeeds = tool.kichHoatMuaHat;
     p.buyTools = tool.kichHoatMuaCongCu;
     p.showVision = tool.hienMatBot;
+    p.plant = tool.kichHoatTrongCay;
+    std::copy(std::begin(tool.cacHatCanTrong), std::end(tool.cacHatCanTrong), p.plantingSeeds.begin());
     p.harvestMode = tool.modeThuHoachTenTim;
     std::copy(std::begin(tool.cacHatDuocChon), std::end(tool.cacHatDuocChon), p.crops.begin());
     std::copy(std::begin(tool.cacHatCanMua), std::end(tool.cacHatCanMua), p.seeds.begin());
@@ -215,6 +222,8 @@ void FarmApplyPreferences(ThongTinTool& tool, const FarmPreferences& p) {
     tool.kichHoatMuaHat = p.buySeeds;
     tool.kichHoatMuaCongCu = p.buyTools;
     tool.hienMatBot = p.showVision;
+    tool.kichHoatTrongCay = p.plant;
+    std::copy(p.plantingSeeds.begin(), p.plantingSeeds.end(), std::begin(tool.cacHatCanTrong));
     tool.modeThuHoachTenTim = p.harvestMode;
     std::copy(p.crops.begin(), p.crops.end(), std::begin(tool.cacHatDuocChon));
     std::copy(p.seeds.begin(), p.seeds.end(), std::begin(tool.cacHatCanMua));
@@ -957,6 +966,8 @@ void ThucHienMuaCongCu(ThongTinTool* tool) {
     if (tool->dangChay) FarmExitStore(tool);
     tool->thongBaoStatus = "Da kiem tra cua hang cong cu";
 }
+
+#include "farm_plant_runtime.h"
 
 // thu nhỏ màn hình 
 void ZoomNhoManHinh_SieuMuot1(ThongTinTool* thongTin) {
@@ -4154,6 +4165,7 @@ void LuongTuDongFarm(ThongTinTool* thongTin) {
                 thongTin->trangThaiHienTai = STATE_BUYING_SEEDS;
 
                 ThucHienMuaHat(thongTin);
+                if (thongTin->dangChay && thongTin->kichHoatTrongCay) FarmPlantSelected(thongTin);
 
                 thongTin->thoiGianMuaHatGanNhat = chrono::steady_clock::now(); // Reset mốc mua hạt
 
@@ -4179,6 +4191,9 @@ void LuongTuDongFarm(ThongTinTool* thongTin) {
             }
         }
 
+        if (thongTin->kichHoatTrongCay && GetTickCount64() >= thongTin->henTrongCay) {
+            FarmPlantSelected(thongTin);
+        }
         thongTin->trangThaiHienTai = STATE_IDLE;
         this_thread::sleep_for(chrono::milliseconds(1500));
     }
@@ -4346,6 +4361,65 @@ int main(int, char**) {
                                         ImGui::TextColored(ImVec4(1, 1, 0, 1), "Che do LOC BIEN THE: hai het, tru bien the.");
                                     }
                                 }
+                                ImGui::Separator();
+
+                                // --- TRONG CAY: danh sach rieng, mac dinh trong ---
+                                ImGui::BeginDisabled(tab->dangChay);
+                                luaChonDaDoi |= ImGui::Checkbox("Auto TRONG CAY (hat trong balo)", &tab->kichHoatTrongCay);
+                                if (tab->kichHoatTrongCay) {
+                                    ImGui::TextWrapped("Chi trong hat da chon. Khong co trong balo: bo qua. Mua xong hat trong danh sach mua thi trong tiep; khong tu mua loai khac.");
+                                    if (ImGui::CollapsingHeader(" DANH SACH HAT TRONG", ImGuiTreeNodeFlags_DefaultOpen)) {
+                                        if (ImGui::BeginChild("VungHatTrong", ImVec2(0, 160), true)) {
+                                            ImGui::Columns(2, "HatTrongCols");
+                                            for (int h = 0; h < SO_HAT_TRONG; ++h) {
+                                                ImGui::PushID(1000+h);
+                                                luaChonDaDoi |= ImGui::Checkbox(ds_hat_trong[h], &tab->cacHatCanTrong[h]);
+                                                ImGui::PopID();
+                                                ImGui::NextColumn();
+                                            }
+                                            ImGui::Columns(1);
+                                        }
+                                        ImGui::EndChild();
+                                    }
+                                    if (ImGui::Button("TRONG THU 1 CAY", ImVec2(-1, 28))) {
+                                        tab->dangChay = true;
+                                        std::thread([tab]() {FarmPlantSelected(tab,1);tab->dangChay=false;}).detach();
+                                    }
+                                    if (ImGui::CollapsingHeader("KIEM TRA TRONG CAY / DI CHUYEN")) {
+                                        auto moveButton=[&](const char* label,cv::Point2d direction) {
+                                            if(ImGui::Button(label,ImVec2(132,25))) {
+                                                tab->dangChay=true;
+                                                std::thread([tab,direction]() {PlantMove(tab,direction,1000);tab->thongBaoStatus="Da di chuyen 1 giay";tab->dangChay=false;}).detach();
+                                            }
+                                        };
+                                        moveButton("LEN 1 GIAY",{0,-1});ImGui::SameLine();
+                                        moveButton("XUONG 1 GIAY",{0,1});ImGui::SameLine();
+                                        moveButton("TRAI 1 GIAY",{-1,0});ImGui::SameLine();
+                                        moveButton("PHAI 1 GIAY",{1,0});
+                                        if(ImGui::Button("CAM HAT DA CHON",ImVec2(-1,25))) {
+                                            tab->dangChay=true;
+                                            std::thread([tab]() {
+                                                bool equipped=false;
+                                                for(int h=0;h<SO_HAT_TRONG && tab->dangChay;++h)if(tab->cacHatCanTrong[h]&&PlantEquipSeed(tab,h)){equipped=true;break;}
+                                                tab->thongBaoStatus=equipped?"Da cam dung hat trong":"Khong co hat da chon trong balo";
+                                                tab->dangChay=false;
+                                            }).detach();
+                                        }
+                                        if(ImGui::Button("CAMERA GAN HON",ImVec2(-1,25))) {
+                                            tab->dangChay=true;
+                                            std::thread([tab](){PlantCameraCloser(tab);tab->dangChay=false;}).detach();
+                                        }
+                                        if(ImGui::Button("DOC VI TRI TRONG",ImVec2(-1,25))) {
+                                            tab->dangChay=true;
+                                            std::thread([tab](){
+                                                auto frame=PlantFrame(tab);auto ring=PlantFindValidRing(frame);int seed=PlantHeldSeed(frame);
+                                                tab->thongBaoStatus="Hat="+(seed<0?std::string("?"):std::string(ds_hat_trong[seed]))+"; con="+std::to_string(PlantSeedCount(frame))+"; vong xanh="+std::to_string(ring.center.x)+","+std::to_string(ring.center.y);
+                                                tab->dangChay=false;
+                                            }).detach();
+                                        }
+                                    }
+                                }
+                                ImGui::EndDisabled();
                                 ImGui::Separator();
 
                                 // --- MUA ĐỒ ---
