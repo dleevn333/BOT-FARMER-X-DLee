@@ -34,12 +34,15 @@ int main(int argc, char** argv) {
         first.luaChonMapGoc = 4;
         first.dangChay = true;
         first.h_game = reinterpret_cast<HWND>(123);
+        first.hatTrongDaNho.valid=true;
+        first.hatTrongDaNho.snapshot.seeds[0].present=true;
         Check(FarmSavePreferences(first), "Write mixed selections atomically");
         ThongTinTool reopened;
         reopened.tenTab = first.tenTab;
         FarmLoadPreferences(reopened);
         CheckSame(first, reopened, "Reopen restores every user preference");
         Check(!reopened.dangChay && reopened.h_game == nullptr, "Loading must never restore running state or handles");
+        Check(!reopened.hatTrongDaNho.valid&&reopened.hatTrongDaNho.scans==0,"A new process must scan current stock instead of loading an old inventory cache");
         Check(reopened.mapMuonSan == 4 && reopened.luaChonMapGoc == 4, "Restore the original map choice");
         ThongTinTool second;
         second.tenTab = "settings-test-secondary";

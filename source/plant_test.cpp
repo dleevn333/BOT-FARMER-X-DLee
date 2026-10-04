@@ -1,4 +1,5 @@
 #include "farm_plant_vision.h"
+#include "farm_plant_inventory.h"
 #include <iostream>
 #include <stdexcept>
 static int checks=0;
@@ -45,5 +46,44 @@ int main(int argc,char** argv){try {
     Check(PlantCountChanged(thirteen,eleven),"Short x11 count is confirmed by its changed glyphs when OCR omits it");
     Check(!PlantCountChanged(thirteen,thirteen),"An unchanged quantity never confirms planting");
     Check(!PlantCountChanged(thirteen,cv::Mat::zeros(thirteen.size(),CV_8U)),"A faded or missing count never confirms planting");
+    PlantInventorySnapshot observed;
+    for(auto card:PlantBagCards(bag)) {
+        auto identity=PlantIdentifySeed(bag,{card.x+18,card.y+55,card.width-36,76},glyphs);
+        PlantInventoryRemember(observed,0,card,identity);
+    }
+    observed.complete=true;
+    PlantInventoryCache cache;int scans=0;
+    auto scan=[&](PlantInventorySnapshot& result){++scans;result=observed;return true;};
+    for(int seed:{0,1,2,4,6,29,30,33}) {
+        Check(PlantInventoryEnsure(cache,101,scan),"Multiple selections share a completed backpack scan");
+        Check(cache.Has(seed)==observed.seeds[seed].present,"Remember both available and absent seeds");
+    }
+    Check(scans==1&&cache.scans==1,"Eight selected seed types open one full scan, including missing types");
+    auto oldPoint=cache.snapshot.seeds[4].point;
+    cache.Exhausted(4);
+    Check(!cache.Has(4)&&cache.Has(6)&&cache.valid,"Consuming the last potato preserves the remembered corn and missing types");
+    Check(PlantInventoryEnsure(cache,101,scan)&&scans==1,"The next planting round reuses inventory after exhaustion");
+    cache.Purchased(0);
+    Check(PlantInventoryEnsure(cache,101,scan)&&scans==1,"An empty shop does not trigger a needless inventory scan");
+    cache.Purchased(1);
+    Check(!cache.valid&&PlantInventoryEnsure(cache,101,scan)&&scans==2&&cache.Has(4),"A successful purchase refreshes all types once");
+    for(int seed:{1,2,4,6,33})Check(PlantInventoryEnsure(cache,101,scan),"Remaining selections reuse the purchased inventory snapshot");
+    Check(scans==2,"Purchase refresh does not become one scan per seed");
+    PlantSeedIdentity moved{4,.98,.5,oldPoint+cv::Point(150,0)};
+    PlantInventoryRemember(cache.snapshot,0,{oldPoint.x+132,oldPoint.y-55,138,175},moved,true);
+    Check(cache.snapshot.seeds[4].point==moved.point&&cache.Has(6),"Repair a compacted page without losing other remembered seeds");
+    Check(PlantInventoryEnsure(cache,102,scan)&&scans==3,"A changed LDPlayer render handle cannot reuse stale positions");
+    PlantInventoryCache other;int otherScans=0;
+    Check(PlantInventoryEnsure(other,202,[&](PlantInventorySnapshot& result){++otherScans;result.complete=true;return true;}),"A second LDPlayer keeps its own empty inventory");
+    for(int seed:{0,1,2,4}) {
+        Check(PlantInventoryEnsure(other,202,[&](PlantInventorySnapshot&){++otherScans;return false;}),"An empty backpack is a complete reusable snapshot");
+        Check(!other.Has(seed),"Empty stock skips each missing selection without scanning");
+    }
+    Check(otherScans==1&&cache.Has(0),"Empty inventory does not overwrite another instance");
+    cache.Invalidate();
+    Check(!PlantInventoryEnsure(cache,102,[&](PlantInventorySnapshot& result){result=observed;result.complete=false;return true;}),"A page limit or interrupted scan cannot be committed as complete");
+    Check(!cache.valid&&!cache.Has(0),"A partial scan never reports trustworthy presence or absence");
+    Check(PlantInventoryEnsure(cache,102,scan)&&scans==4,"Retry a failed scan once, then reuse the complete result");
+    Check(!PlantInventoryEnsure(cache,0,scan)&&scans==4,"Do not scan without a valid game handle");
     std::cout<<checks<<" planting vision checks passed\n";return 0;
 }catch(const std::exception& e){std::cerr<<"Planting check failed: "<<e.what()<<"\n";return 1;}}

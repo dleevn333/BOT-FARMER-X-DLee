@@ -106,46 +106,111 @@ inline void PlantCameraCloser(ThongTinTool* tool) {
     }
     PlantWait(tool,400);
 }
-inline bool PlantEquipSeed(ThongTinTool* tool,int index) {
-    if(index<0 || index>=SO_HAT_TRONG)return false;
+inline void PlantCloseBag(ThongTinTool* tool) {
+    if(tool->dangChay&&PlantIsBag(PlantFrame(tool))){PlantClick(tool,{923,35});PlantWait(tool,300);}
+}
+inline double PlantBagDifference(const cv::Mat& a,const cv::Mat& b) {
+    if(a.empty()||b.empty()||a.size()!=b.size())return 1e6;
+    cv::Rect area(35,145,890,365);
+    return cv::norm(a(area),b(area),cv::NORM_L1)/(area.area()*3.);
+}
+inline bool PlantOpenSeedBag(ThongTinTool* tool) {
     auto frame=PlantFrame(tool);
     if(frame.empty())return false;
-    if(PlantHeldSeed(frame)==index)return true;
     if(!PlantIsBag(frame)) {
         PlantClick(tool,{920,303});
         if(!PlantWait(tool,550))return false;
         frame=PlantFrame(tool);
     }
     if(!PlantIsBag(frame))return false;
-    PlantClick(tool,{855,33});
-    PlantWait(tool,250);
-    PlantClick(tool,{180,105});
-    PlantWait(tool,350);
-    // Reset only the backpack, never the harvest crop filter.
-    for(int up=0;up<5 && tool->dangChay;++up)PlantSwipe(tool,false);
-    for(int page=0;page<16 && tool->dangChay;++page) {
-        frame=PlantFrame(tool);
+    PlantClick(tool,{855,33});if(!PlantWait(tool,250))return false;
+    PlantClick(tool,{180,105});if(!PlantWait(tool,350))return false;
+    // Stop resetting at the top instead of blindly performing five swipes.
+    for(int up=0;up<16&&tool->dangChay;++up) {
+        auto before=PlantFrame(tool);
+        PlantSwipe(tool,false);
+        if(!PlantWait(tool,200))return false;
+        auto after=PlantFrame(tool);
+        if(!PlantIsBag(after))return false;
+        if(PlantBagDifference(before,after)<1.5)return true;
+    }
+    return false;
+}
+inline void PlantReadBagPage(const cv::Mat& frame,int page,PlantInventorySnapshot& inventory,bool replace=false) {
+    for(auto card:PlantBagCards(frame)) {
+        auto identity=PlantIdentifySeed(frame,{card.x+18,card.y+55,card.width-36,76},PlantGlyphs());
+        PlantInventoryRemember(inventory,page,card,identity,replace);
+    }
+}
+inline bool PlantScanInventory(ThongTinTool* tool,PlantInventorySnapshot& result) {
+    tool->thongBaoStatus="Quet balo mot luot: nho tat ca cac hat";
+    if(!PlantOpenSeedBag(tool))return false;
+    for(int page=0;page<16&&tool->dangChay;++page) {
+        auto frame=PlantFrame(tool);
         if(!PlantIsBag(frame))break;
-        for(auto card:PlantBagCards(frame)) {
-            auto identity=PlantIdentifySeed(frame,{card.x+18,card.y+55,card.width-36,76},PlantGlyphs());
-            if(identity.index!=index)continue;
-            PlantClick(tool,identity.point);
-            for(int attempt=0;attempt<8 && tool->dangChay;++attempt) {
-                PlantWait(tool,200);
-                auto equipped=PlantFrame(tool);
-                if(PlantHeldSeed(equipped)==index)return true;
+        if(PlantBagCards(frame).empty()) {
+            if(page==0&&PlantWait(tool,300)) {
+                auto empty=PlantFrame(tool);
+                if(PlantIsBag(empty)&&PlantBagCards(empty).empty()&&PlantBagDifference(frame,empty)<1.5){result.complete=true;return true;}
             }
+            break;
+        }
+        tool->thongBaoStatus="Quet balo mot luot: trang "+std::to_string(page+1);
+        PlantReadBagPage(frame,page,result);
+        PlantSwipe(tool,true);
+        if(!PlantWait(tool,200))return false;
+        auto after=PlantFrame(tool);
+        if(!PlantIsBag(after))break;
+        if(PlantBagDifference(frame,after)<1.5){result.complete=true;return true;}
+    }
+    PlantCloseBag(tool);
+    tool->thongBaoStatus="Chua quet het balo; khong dung du lieu thieu";
+    return false;
+}
+inline bool PlantEnsureInventory(ThongTinTool* tool) {
+    return PlantInventoryEnsure(tool->hatTrongDaNho,reinterpret_cast<std::uintptr_t>(tool->h_game),
+        [&](PlantInventorySnapshot& next){return PlantScanInventory(tool,next);});
+}
+inline bool PlantEquipSeed(ThongTinTool* tool,int index) {
+    if(index<0||index>=SO_HAT_TRONG||!tool->dangChay)return false;
+    if(!PlantEnsureInventory(tool))return false;
+    // Missing seeds are remembered too: no bag-opening or per-seed search.
+    if(!tool->hatTrongDaNho.Has(index))return false;
+    auto frame=PlantFrame(tool);
+    if(PlantHeldSeed(frame)==index)return true;
+    for(int refresh=0;refresh<2&&tool->dangChay;++refresh) {
+        auto slot=tool->hatTrongDaNho.snapshot.seeds[index];
+        if(!slot.present)return false;
+        if(!PlantOpenSeedBag(tool))return false;
+        for(int page=0;page<slot.page&&tool->dangChay;++page)PlantSwipe(tool,true);
+        if(!PlantWait(tool,200))return false;
+        frame=PlantFrame(tool);
+        if(!PlantIsBag(frame))return false;
+        auto identity=PlantIdentifySeed(frame,{slot.card.x+18,slot.card.y+55,slot.card.width-36,76},PlantGlyphs());
+        if(identity.index!=index) {
+            // Exhausted packets compact the grid. Repair the visible page once.
+            PlantReadBagPage(frame,slot.page,tool->hatTrongDaNho.snapshot,true);
+            auto moved=tool->hatTrongDaNho.snapshot.seeds[index];
+            identity=PlantIdentifySeed(frame,{moved.card.x+18,moved.card.y+55,moved.card.width-36,76},PlantGlyphs());
+        }
+        if(identity.index==index) {
+            PlantClick(tool,identity.point);
+            for(int attempt=0;attempt<8&&tool->dangChay;++attempt) {
+                if(!PlantWait(tool,200))return false;
+                if(PlantHeldSeed(PlantFrame(tool))==index)return true;
+            }
+            PlantCloseBag(tool);
             tool->thongBaoStatus="Khong xac nhan duoc hat dang cam: "+std::string(ds_hat_trong[index]);
             return false;
         }
-        auto before=frame(cv::Rect(35,145,890,365)).clone();
-        PlantSwipe(tool,true);
-        auto after=PlantFrame(tool);
-        if(after.empty())break;
-        double difference=cv::norm(before,after(cv::Rect(35,145,890,365)),cv::NORM_L1)/(before.total()*3.);
-        if(difference<1.5)break;
+        // An externally changed bag or a page boundary invalidates the whole
+        // snapshot once; it is then reused for every remaining selected seed.
+        if(refresh==0) {
+            tool->hatTrongDaNho.Invalidate();
+            if(!PlantEnsureInventory(tool)||!tool->hatTrongDaNho.Has(index)){PlantCloseBag(tool);return false;}
+        }
     }
-    if(tool->dangChay && PlantIsBag(PlantFrame(tool))) {PlantClick(tool,{923,35});PlantWait(tool,300);}
+    PlantCloseBag(tool);
     return false;
 }
 
@@ -224,7 +289,17 @@ inline bool PlantClickConfirmed(ThongTinTool* tool,const cv::Mat& before,PlantRi
 inline void FarmPlantSelected(ThongTinTool* tool,int maxPlants=40) {
     bool any=false;for(bool chosen:tool->cacHatCanTrong)any|=chosen;
     if(!any){tool->thongBaoStatus="Trong cay: chua chon hat de trong";return;}
+    if(tool->hatTrongDaNho.valid&&tool->hatTrongDaNho.gameKey==reinterpret_cast<std::uintptr_t>(tool->h_game)) {
+        bool available=false;int missing=0;
+        for(int seed=0;seed<SO_HAT_TRONG;++seed)if(tool->cacHatCanTrong[seed]){available|=tool->hatTrongDaNho.Has(seed);missing+=!tool->hatTrongDaNho.Has(seed);}
+        if(!available){tool->thongBaoStatus="Balo da nho: bo qua "+std::to_string(missing)+" loai hat khong co";tool->henTrongCay=GetTickCount64()+60000;return;}
+    }
     if(!tool->dangChay||!PlantGoHome(tool)){if(tool->dangChay)tool->thongBaoStatus="Trong cay: chua xac nhan den nong trai";return;}
+    if(!PlantEnsureInventory(tool)) {
+        if(tool->dangChay){tool->thongBaoStatus="Trong cay: chua quet duoc balo";tool->henTrongCay=GetTickCount64()+60000;}
+        return;
+    }
+    PlantCloseBag(tool);
     PlantCameraCloser(tool);
     tool->soCayVuaTrong=0;
     int skipped=0,moves=0,entrySteps=0;
@@ -235,7 +310,7 @@ inline void FarmPlantSelected(ThongTinTool* tool,int maxPlants=40) {
     for(int seed=0;seed<SO_HAT_TRONG&&tool->dangChay&&tool->soCayVuaTrong<maxPlants;++seed) {
         if(!tool->cacHatCanTrong[seed])continue;
         if(std::chrono::steady_clock::now()>deadline)break;
-        tool->thongBaoStatus="Lay hat trong balo: "+std::string(ds_hat_trong[seed]);
+        tool->thongBaoStatus="Lay hat da nho: "+std::string(ds_hat_trong[seed]);
         if(!PlantEquipSeed(tool,seed)){++skipped;continue;}
         int stalled=0;
         while(tool->dangChay&&tool->soCayVuaTrong<maxPlants&&moves<140&&std::chrono::steady_clock::now()<deadline) {
@@ -251,7 +326,7 @@ inline void FarmPlantSelected(ThongTinTool* tool,int maxPlants=40) {
                 visited.push_back(cv::Point2f(again.center));
                 if(confirmed)++tool->soCayVuaTrong;
                 else if(tool->dangChay){tool->thongBaoStatus="Khong xac nhan duoc thao tac trong; dung luot de tranh bam lap";tool->henTrongCay=GetTickCount64()+60000;return;}
-                if(PlantHeldSeed(PlantFrame(tool))!=seed)break;
+                if(PlantHeldSeed(PlantFrame(tool))!=seed){tool->hatTrongDaNho.Exhausted(seed);break;}
                 before=PlantFrame(tool);
             }
             auto destination=PlantNextSoilSpot(before,visited);

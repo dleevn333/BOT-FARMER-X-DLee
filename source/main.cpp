@@ -20,6 +20,7 @@
 #include "farm_ocr.h"
 #include "farm_settings.h"
 #include "farm_plant_vision.h"
+#include "farm_plant_inventory.h"
 #include <filesystem>
 #include <fstream>
 #include <algorithm>
@@ -127,6 +128,7 @@ struct ThongTinTool {
     bool cacHatCanTrong[SO_HAT_TRONG] = {};
     unsigned long long henTrongCay = 0;
     int soCayVuaTrong = 0;
+    PlantInventoryCache hatTrongDaNho;
 
     long long time_cho_hoi_qua = 0;
     int buocHienTai = 0;
@@ -930,6 +932,7 @@ void ThucHienMuaHat(ThongTinTool* tool) {
     }
     if (tool->dangChay) FarmExitStore(tool);
     tool->thongBaoStatus = "Xong kiem tra cua hang: " + to_string(bought) + " loai co hang";
+    tool->hatTrongDaNho.Purchased(bought);
 }
 
 
@@ -4036,6 +4039,7 @@ void AutoSanThoiTietCauCa2(ThongTinTool* thongTin) {
 
 
 void LuongTuDongFarm(ThongTinTool* thongTin) {
+    thongTin->hatTrongDaNho.Invalidate();
     thongTin->thoiGianMuaHatGanNhat = chrono::steady_clock::now() - chrono::seconds(120);
     thongTin->thoiGianMuaCongCuGanNhat = chrono::steady_clock::now() - chrono::seconds(300);
     
@@ -4368,6 +4372,21 @@ int main(int, char**) {
                                 luaChonDaDoi |= ImGui::Checkbox("Auto TRONG CAY (hat trong balo)", &tab->kichHoatTrongCay);
                                 if (tab->kichHoatTrongCay) {
                                     ImGui::TextWrapped("Chi trong hat da chon. Khong co trong balo: bo qua. Mua xong hat trong danh sach mua thi trong tiep; khong tu mua loai khac.");
+                                    ImGui::TextWrapped("Quet balo mot luot va nho cac hat. Mua them hat se cap nhat lai; doi hat chi lay theo du lieu da nho.");
+                                    if(ImGui::Button("QUET LAI HAT TRONG BALO",ImVec2(-1,25))) {
+                                        tab->dangChay=true;
+                                        std::thread([tab](){
+                                            tab->hatTrongDaNho.Invalidate();
+                                            bool ready=PlantEnsureInventory(tab);
+                                            PlantCloseBag(tab);
+                                            if(ready) {
+                                                int found=0;for(const auto& seed:tab->hatTrongDaNho.snapshot.seeds)found+=seed.present;
+                                                tab->thongBaoStatus="Da nho balo: "+std::to_string(found)+" loai hat; cac hat khac duoc nho la thieu";
+                                            } else tab->thongBaoStatus="Chua quet duoc balo; dong hoi thoai/menu game roi thu lai";
+                                            tab->dangChay=false;
+                                        }).detach();
+                                    }
+                                    ImGui::Text("Balo: %s | So luot quet: %u",tab->hatTrongDaNho.valid?"da nho":"chua quet",tab->hatTrongDaNho.scans.load());
                                     if (ImGui::CollapsingHeader(" DANH SACH HAT TRONG", ImGuiTreeNodeFlags_DefaultOpen)) {
                                         if (ImGui::BeginChild("VungHatTrong", ImVec2(0, 160), true)) {
                                             ImGui::Columns(2, "HatTrongCols");
@@ -4400,7 +4419,8 @@ int main(int, char**) {
                                             tab->dangChay=true;
                                             std::thread([tab]() {
                                                 bool equipped=false;
-                                                for(int h=0;h<SO_HAT_TRONG && tab->dangChay;++h)if(tab->cacHatCanTrong[h]&&PlantEquipSeed(tab,h)){equipped=true;break;}
+                                                if(PlantEnsureInventory(tab))for(int h=0;h<SO_HAT_TRONG && tab->dangChay;++h)if(tab->cacHatCanTrong[h]&&PlantEquipSeed(tab,h)){equipped=true;break;}
+                                                PlantCloseBag(tab);
                                                 tab->thongBaoStatus=equipped?"Da cam dung hat trong":"Khong co hat da chon trong balo";
                                                 tab->dangChay=false;
                                             }).detach();
