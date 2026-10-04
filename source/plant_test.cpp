@@ -7,8 +7,7 @@ static void Check(bool value,const char* message){++checks;if(!value)throw std::
 int main(int argc,char** argv){try {
     Check(argc==3,"Pass assets and image directories");
     std::string assets=argv[1],images=argv[2];
-    std::vector<cv::Mat> glyphs;
-    for(int i=0;i<SO_HAT_TRONG;++i)glyphs.push_back(PlantSeedGlyph(cv::imread(images+"/"+ds_anh_hat_trong[i]),i>=29));
+    auto glyphs=PlantLoadGlyphs(images);
     for(auto& glyph:glyphs)Check(!glyph.empty(),"Every selectable seed has a recognition asset");
     auto bag=cv::imread(assets+"/bag-all.png");
     Check(PlantBagCards(bag).size()==12,"Find all observed backpack cards");
@@ -16,6 +15,20 @@ int main(int argc,char** argv){try {
     const int expected[]={6,4,14,11,0};
     for(int col=1;col<6;++col)Check(PlantIdentifySeed(bag,{55+150*col,200,105,80},glyphs).index==expected[col-1],"Distinguish ordinary seeds");
     for(int col=0;col<5;++col)Check(PlantIdentifySeed(bag,{55+150*col,390,105,80},glyphs).index==29+col,"Identify bag-only event seeds");
+    auto filtered=cv::imread(assets+"/bag-seed-filter.png");
+    Check(PlantBagCards(filtered).size()==12,"The settled seed filter contains twelve complete packets");
+    PlantInventorySnapshot filteredStock;
+    for(auto card:PlantBagCards(filtered))PlantInventoryRemember(filteredStock,0,card,
+        PlantIdentifySeed(filtered,{card.x+18,card.y+55,card.width-36,76},glyphs));
+    for(int seed:{6,21,4,14,11,0,29,30,31,32,33,19})
+        Check(filteredStock.seeds[seed].present,(std::string("Settled page must remember ")+ds_hat_trong[seed]).c_str());
+    auto native=cv::imread(assets+"/bag-seed-native.png");
+    Check(PlantBagCards(native).size()==12,"The exact bot capture has twelve visible packets");
+    PlantInventorySnapshot nativeStock;
+    for(auto card:PlantBagCards(native))PlantInventoryRemember(nativeStock,0,card,
+        PlantIdentifySeed(native,{card.x+18,card.y+55,card.width-36,76},glyphs));
+    for(int seed:{6,21,4,14,11,0,29,30,31,32,33,19})
+        Check(nativeStock.seeds[seed].present,(std::string("Bot capture must remember ")+ds_hat_trong[seed]).c_str());
     auto ref=cv::imread(assets+"/ring-reference.png");
     auto ring=PlantFindValidRing(ref,{190,65});
     Check(ring.center.x>=0&&cv::norm(ring.center-cv::Point(128,57))<8,"Recognize user's valid cyan planting ring");

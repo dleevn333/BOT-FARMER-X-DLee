@@ -1,10 +1,10 @@
-# BOT FARMER X DLee — v0.1.3
+# BOT FARMER X DLee — v0.1.4
 
 Tên cửa sổ/menu: **BOT FARMER X DLee v0.1**.
 
 ## Chạy
 
-Chạy `BOT-FARMER-X-DLee-v0.1.3.exe` (đã kèm DLL/ảnh, không cần quyền quản trị), hoặc giải nén ZIP đầy đủ rồi chạy `autofarmnongtrai-update.exe`.
+Chạy `BOT-FARMER-X-DLee-v0.1.4.exe` (đã kèm DLL/ảnh, không cần quyền quản trị), hoặc giải nén ZIP đầy đủ rồi chạy `autofarmnongtrai-update.exe`.
 Đặt vùng game LDPlayer 960 × 540, bấm **QUET TAT CA LDPLAYER**, chọn đúng tab, chọn chức năng rồi **START BOT**. **STOP BOT** dừng và nhả cần di chuyển.
 
 ## Auto trồng cây
@@ -25,6 +25,8 @@ Mua thêm hạt thành công sẽ làm mới dữ liệu cho lượt trồng ti�
 
 Nút **QUET LAI HAT TRONG BALO** cập nhật khi bạn tự thay đổi đồ. Dòng **So luot quet** cho biết số lượt quét toàn bộ, không phải số hạt đã chọn. Dữ liệu balo chỉ nhớ trong lần chạy hiện tại; mỗi lần START hoặc mở lại EXE sẽ kiểm tra tồn kho mới. Danh sách đã chọn vẫn tự lưu như trước.
 
+Bot đợi ảnh hạt và vị trí thẻ ổn định sau khi mở/cuộn balo. Ảnh hạt nhỏ được đối chiếu thêm ở các mức phóng gần nhất, giữ nguyên ngưỡng xác nhận để tránh chọn nhầm loại. Gói chưa nhận ra được kiểm tra lại trên cùng trang trước khi kết thúc lượt quét.
+
 ## Lưu lựa chọn và thu hoạch
 
 Lần đầu mọi lựa chọn đều trống. Mỗi thay đổi tự lưu theo tên tab LDPlayer; nút **LUU LUA CHON** lưu thủ công. Lần sau mở/quét lại khôi phục nhưng không tự START. Dữ liệu ở `%LOCALAPPDATA%/BOT FARMER X DLee/settings`, giữ được qua các bản EXE. Đọc được cấu hình v0.1.1; chức năng trồng mới mặc định tắt.
@@ -32,5 +34,5 @@ Giữ thu hoạch Tên Tím, thu hoạch thường qua nút Thu hoạch, bỏ cu
 
 ## Kiểm tra
 
-40 kiểm tra lưu cấu hình/chuyển dữ liệu và 102 kiểm tra nhận diện/bộ nhớ balo đã đạt. Kiểm tra bộ nhớ bằng nhiều hạt có/thiếu, lượt tiếp theo, mua thêm, dùng hết, đổi tab và lượt quét chưa hoàn tất. Luồng trồng đã được thử trên LDPlayer ở v0.1.2; lần cập nhật này kiểm tra việc quét/lấy nhiều loại hạt trực tiếp, không thử lại toàn bộ mua/bán.
+40 kiểm tra lưu cấu hình/chuyển dữ liệu và 130 kiểm tra nhận diện/bộ nhớ balo đã đạt. Kiểm tra đủ 12 gói hạt trong ảnh lọc, bộ nhớ dùng chung cho nhiều hạt có/thiếu, lượt tiếp theo, mua thêm, dùng hết, đổi tab và lượt quét chưa hoàn tất. Luồng trồng đã được thử trên LDPlayer ở v0.1.2; lần cập nhật này kiểm tra việc quét/lấy nhiều loại hạt trực tiếp, không thử lại toàn bộ mua/bán.
 Mã nguồn/build ở `source`, tài nguyên ở `images`, giấy phép thư viện ở `licenses`. `SHA256SUMS.txt` đối chiếu ZIP; `.exe.sha256` đối chiếu EXE một file.

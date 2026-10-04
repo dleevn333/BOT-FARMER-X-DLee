@@ -64,11 +64,7 @@ inline void PlantSwipe(ThongTinTool* tool,bool downward) {
     PlantWait(tool,350);
 }
 inline const std::vector<cv::Mat>& PlantGlyphs() {
-    static const auto glyphs=[] {
-        std::vector<cv::Mat> result;
-        for(int i=0;i<SO_HAT_TRONG;++i)result.push_back(PlantSeedGlyph(cv::imread(std::string("images/")+ds_anh_hat_trong[i]),i>=29));
-        return result;
-    }();
+    static const auto glyphs=PlantLoadGlyphs("images");
     return glyphs;
 }
 inline bool PlantIsBag(const cv::Mat& frame) {
@@ -114,6 +110,21 @@ inline double PlantBagDifference(const cv::Mat& a,const cv::Mat& b) {
     cv::Rect area(35,145,890,365);
     return cv::norm(a(area),b(area),cv::NORM_L1)/(area.area()*3.);
 }
+inline bool PlantWaitBagStable(ThongTinTool* tool) {
+    // Packet images load after the panel opens; swipe bounce also moves cards.
+    // Read only after consecutive settled frames, including a minimum pause.
+    if(!PlantWait(tool,350))return false;
+    auto before=PlantFrame(tool);int stable=0;
+    for(int sample=0;sample<12&&tool->dangChay;++sample) {
+        if(!PlantWait(tool,150))return false;
+        auto after=PlantFrame(tool);
+        if(!PlantIsBag(after))return false;
+        stable=PlantBagDifference(before,after)<.15?stable+1:0;
+        if(stable>=3)return true;
+        before=after;
+    }
+    return false;
+}
 inline bool PlantOpenSeedBag(ThongTinTool* tool) {
     auto frame=PlantFrame(tool);
     if(frame.empty())return false;
@@ -125,22 +136,26 @@ inline bool PlantOpenSeedBag(ThongTinTool* tool) {
     if(!PlantIsBag(frame))return false;
     PlantClick(tool,{855,33});if(!PlantWait(tool,250))return false;
     PlantClick(tool,{180,105});if(!PlantWait(tool,350))return false;
+    if(!PlantWaitBagStable(tool))return false;
     // Stop resetting at the top instead of blindly performing five swipes.
     for(int up=0;up<16&&tool->dangChay;++up) {
         auto before=PlantFrame(tool);
         PlantSwipe(tool,false);
-        if(!PlantWait(tool,200))return false;
+        if(!PlantWaitBagStable(tool))return false;
         auto after=PlantFrame(tool);
         if(!PlantIsBag(after))return false;
         if(PlantBagDifference(before,after)<1.5)return true;
     }
     return false;
 }
-inline void PlantReadBagPage(const cv::Mat& frame,int page,PlantInventorySnapshot& inventory,bool replace=false) {
+inline int PlantReadBagPage(const cv::Mat& frame,int page,PlantInventorySnapshot& inventory,bool replace=false) {
+    int unread=0;
     for(auto card:PlantBagCards(frame)) {
         auto identity=PlantIdentifySeed(frame,{card.x+18,card.y+55,card.width-36,76},PlantGlyphs());
+        unread+=identity.index<0;
         PlantInventoryRemember(inventory,page,card,identity,replace);
     }
+    return unread;
 }
 inline bool PlantScanInventory(ThongTinTool* tool,PlantInventorySnapshot& result) {
     tool->thongBaoStatus="Quet balo mot luot: nho tat ca cac hat";
@@ -156,9 +171,14 @@ inline bool PlantScanInventory(ThongTinTool* tool,PlantInventorySnapshot& result
             break;
         }
         tool->thongBaoStatus="Quet balo mot luot: trang "+std::to_string(page+1);
-        PlantReadBagPage(frame,page,result);
+        if(PlantReadBagPage(frame,page,result)>0) {
+            // Retry unread packets on this page, without another full bag scan.
+            if(!PlantWaitBagStable(tool))return false;
+            frame=PlantFrame(tool);
+            PlantReadBagPage(frame,page,result);
+        }
         PlantSwipe(tool,true);
-        if(!PlantWait(tool,200))return false;
+        if(!PlantWaitBagStable(tool))return false;
         auto after=PlantFrame(tool);
         if(!PlantIsBag(after))break;
         if(PlantBagDifference(frame,after)<1.5){result.complete=true;return true;}
@@ -183,7 +203,7 @@ inline bool PlantEquipSeed(ThongTinTool* tool,int index) {
         if(!slot.present)return false;
         if(!PlantOpenSeedBag(tool))return false;
         for(int page=0;page<slot.page&&tool->dangChay;++page)PlantSwipe(tool,true);
-        if(!PlantWait(tool,200))return false;
+        if(!PlantWaitBagStable(tool))return false;
         frame=PlantFrame(tool);
         if(!PlantIsBag(frame))return false;
         auto identity=PlantIdentifySeed(frame,{slot.card.x+18,slot.card.y+55,slot.card.width-36,76},PlantGlyphs());

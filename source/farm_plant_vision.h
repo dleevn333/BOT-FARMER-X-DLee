@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <array>
 
 constexpr int SO_HAT_TRONG = 34;
 inline constexpr const char* ds_hat_trong[SO_HAT_TRONG] = {
@@ -88,6 +89,14 @@ inline cv::Mat PlantSeedGlyph(const cv::Mat& original, bool alreadyGlyph = false
     int x2=int(original.cols*.82), y2=int(original.rows*.82);
     return original(cv::Rect(x1,y1,x2-x1,y2-y1)).clone();
 }
+inline std::vector<cv::Mat> PlantLoadGlyphs(const std::string& directory) {
+    std::vector<cv::Mat> glyphs;
+    for(int seed=0;seed<SO_HAT_TRONG;++seed)
+        glyphs.push_back(PlantSeedGlyph(cv::imread(directory+"/"+ds_anh_hat_trong[seed]),seed>=29));
+    glyphs.push_back(cv::imread(directory+"/plant_tieuhanhtinh_native.png"));
+    glyphs.push_back(cv::imread(directory+"/plant_caysaomai_native.png"));
+    return glyphs;
+}
 
 struct PlantSeedIdentity { int index=-1; double score=0, runnerUp=0; cv::Point point{-1,-1}; };
 inline cv::Mat PlantCountMask(const cv::Mat& frame) {
@@ -110,22 +119,37 @@ inline bool PlantCountChanged(const cv::Mat& before,const cv::Mat& after) {
 inline PlantSeedIdentity PlantIdentifySeed(const cv::Mat& frame, cv::Rect search,
     const std::vector<cv::Mat>& glyphs, double threshold=.94, double margin=.05) {
     PlantSeedIdentity result;
+    std::array<double,SO_HAT_TRONG> seedScores{};
+    std::array<cv::Point,SO_HAT_TRONG> seedPoints{};
     search &= cv::Rect(0,0,frame.cols,frame.rows);
     if (frame.empty() || search.empty()) return result;
     for (int i=0; i<int(glyphs.size()); ++i) {
         if (glyphs[i].empty()) continue;
-        double score = 0;
+        double score = 0;int bestPercent=100;
         cv::Point point;
-        for (int percent=80;percent<=180;percent+=5) {
+        auto matchAt=[&](int percent) {
             cv::Mat resized, correlation;
             cv::resize(glyphs[i],resized,{},percent/100.,percent/100.,cv::INTER_LINEAR);
-            if (resized.cols>search.width || resized.rows>search.height || resized.cols<8 || resized.rows<8) continue;
+            if (resized.cols>search.width || resized.rows>search.height || resized.cols<8 || resized.rows<8) return;
             cv::matchTemplate(frame(search),resized,correlation,cv::TM_CCOEFF_NORMED);
             double current; cv::Point at;
             cv::minMaxLoc(correlation,nullptr,&current,nullptr,&at);
-            if (current>score) {score=current;point=search.tl()+at+cv::Point(resized.cols/2,resized.rows/2);}
+            if (current>score) {score=current;bestPercent=percent;point=search.tl()+at+cv::Point(resized.cols/2,resized.rows/2);}
+        };
+        for (int percent=80;percent<=180;percent+=5)matchAt(percent);
+        // Small packets can fall between coarse scales. Refine near matches
+        // instead of lowering the confidence or confusing similar seed art.
+        if(score>=threshold-.06&&score<threshold) {
+            int coarse=bestPercent;
+            for(int percent=std::max(80,coarse-4);percent<=std::min(180,coarse+4);++percent)matchAt(percent);
         }
-        if (score>result.score) {result.runnerUp=result.score;result.index=i;result.score=score;result.point=point;}
+        int seed=i<SO_HAT_TRONG?i:i==SO_HAT_TRONG?30:i==SO_HAT_TRONG+1?31:-1;
+        if(seed>=0&&score>seedScores[seed]){seedScores[seed]=score;seedPoints[seed]=point;}
+    }
+    // Alternative captures of the same seed must not compete with each other.
+    for(int seed=0;seed<SO_HAT_TRONG;++seed) {
+        double score=seedScores[seed];
+        if(score>result.score){result.runnerUp=result.score;result.index=seed;result.score=score;result.point=seedPoints[seed];}
         else result.runnerUp=std::max(result.runnerUp,score);
     }
     if (result.score<threshold || result.score-result.runnerUp<margin) result.index=-1;
