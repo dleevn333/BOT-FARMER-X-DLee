@@ -1,10 +1,10 @@
-# BOT FARMER X DLee — v0.1.5
+# BOT FARMER X DLee — v0.1.6
 
 Tên cửa sổ/menu: **BOT FARMER X DLee v0.1**.
 
 ## Chạy
 
-Chạy `BOT-FARMER-X-DLee-v0.1.5.exe` (đã kèm DLL/ảnh, không cần quyền quản trị), hoặc giải nén ZIP đầy đủ rồi chạy `autofarmnongtrai-update.exe`.
+Chạy `BOT-FARMER-X-DLee-v0.1.6.exe` (đã kèm DLL/ảnh, không cần quyền quản trị), hoặc giải nén ZIP đầy đủ rồi chạy `autofarmnongtrai-update.exe`.
 Đặt vùng game LDPlayer 960 × 540, bấm **QUET TAT CA LDPLAYER**, chọn đúng tab, chọn chức năng rồi **START BOT**. **STOP BOT** dừng và nhả cần di chuyển.
 
 ## Auto trồng cây
@@ -26,6 +26,14 @@ Mua thêm hạt thành công sẽ làm mới dữ liệu cho lượt trồng ti�
 Nút **QUET LAI HAT TRONG BALO** cập nhật khi bạn tự thay đổi đồ. Dòng **So luot quet** cho biết số lượt quét toàn bộ, không phải số hạt đã chọn. Dữ liệu balo chỉ nhớ trong lần chạy hiện tại; mỗi lần START hoặc mở lại EXE sẽ kiểm tra tồn kho mới. Danh sách đã chọn vẫn tự lưu như trước.
 
 Bot đợi ảnh hạt và vị trí thẻ ổn định sau khi mở/cuộn balo. Ảnh hạt nhỏ được đối chiếu thêm ở các mức phóng gần nhất, giữ nguyên ngưỡng xác nhận để tránh chọn nhầm loại. Gói chưa nhận ra được kiểm tra lại trên cùng trang trước khi kết thúc lượt quét.
+
+## Sửa OK sau bán
+
+Bot nhận riêng hộp thoại **Hoàn tất bán hàng** và ảnh OK mới. Chỉ hoàn tất lượt bán khi hộp thoại đóng và bảng bán sáng trở lại; nếu click bị mất trong lúc chuyển cảnh thì thử lại có giới hạn. Khi mở chức năng tiếp theo, bot cũng xử lý hộp thoại bán đang còn kẹt.
+
+**TEST DONG OK SAU BAN** chỉ đóng hộp thoại hoàn tất bán. **TEST BAN TU DONG** chạy luồng bán thật theo cách chọn tự động của game. Hai nút chỉ xuất hiện khi bot đang dừng.
+
+15 kiểm tra ảnh bán/OK đạt, gồm tái hiện mẫu OK cũ bị bỏ sót, phân biệt xác nhận bán, đối chiếu bảng bán sau khi đóng OK và tránh coi bảng bán bị làm tối phía sau hộp thoại là đã xong. Đã thử trên LDPlayer: đóng hộp thoại kết quả đang kẹt và chạy toàn bộ luồng bán tự động, tự xác nhận bán/OK rồi thoát về màn hình game.
 
 ## Sửa lọc trái thu hoạch
 

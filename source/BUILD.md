@@ -22,3 +22,10 @@ Kiểm tra lọc trái bằng ảnh độc lập, không thao tác game:
 ```
 
 HarvestTest kiểm tra tất cả 31 tên, tên có tiền tố, lỗi OCR, tên tương tự, ô dịch vị trí, tên nhiều dòng và ảnh lọc thực tế. Cần Windows OCR (đã có trên máy dùng bot).
+
+Kiểm tra OK sau bán bằng ảnh độc lập:
+
+```powershell
+./source/build.ps1 -OpenCvBuild C:/opencv/build -SellTest
+./sell_test.exe ./source/sell-fixtures ./images
+```

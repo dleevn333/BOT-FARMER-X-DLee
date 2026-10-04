@@ -20,6 +20,7 @@
 #include "farm_crop_match.h"
 #include "farm_ocr.h"
 #include "farm_settings.h"
+#include "farm_sell_vision.h"
 #include "farm_plant_vision.h"
 #include "farm_plant_inventory.h"
 #include <filesystem>
@@ -601,10 +602,42 @@ bool FarmChecked(const cv::Mat& screen, cv::Point center) {
     return cv::countNonZero(saturated) > 35;
 }
 
+cv::Point FarmCompletedSaleOk(const cv::Mat& frame) {
+    static const auto title=cv::imread("images/tieu_de_ban_xong_moi.png");
+    static const auto ok=cv::imread("images/ok_ban_xong_moi.png");
+    return FarmSaleResultOk(frame,title,ok);
+}
+
+bool FarmSellScreenReady(const cv::Mat& frame) {
+    static const auto header=cv::imread("images/tieu_de_ban_moi.png");
+    return FarmSaleReady(frame,header);
+}
+
+bool FarmDismissCompletedSale(ThongTinTool* tool) {
+    bool clicked=false;
+    for(int attempt=0;attempt<16&&tool->dangChay;++attempt) {
+        auto frame=BoDieuKhien::ChupManHinh(tool->h_game);
+        auto ok=FarmCompletedSaleOk(frame);
+        if(ok.x>=0) {
+            tool->thongBaoStatus="Ban xong: bam OK va cho dong hop thoai...";
+            BoDieuKhien::BamChuot(tool->h_game,ok.x,ok.y);
+            clicked=true;
+        } else if(clicked&&FarmSellScreenReady(frame)) {
+            tool->thongBaoStatus="Da dong OK sau ban";
+            return true;
+        } else if(!clicked)break;
+        this_thread::sleep_for(chrono::milliseconds(500));
+    }
+    tool->thongBaoStatus=clicked?"Da bam OK, chua xac minh dong hop thoai":"Khong thay hop thoai Hoan tat ban hang";
+    return false;
+}
+
 void FarmExitStore(ThongTinTool* tool) {
     for (int attempt = 0; attempt < 8 && tool->dangChay; ++attempt) {
         auto frame = BoDieuKhien::ChupManHinh(tool->h_game);
-        if (FarmHasImage(frame, "shop_header.png", {80, 25, 230, 70})) {
+        if (FarmCompletedSaleOk(frame).x>=0) {
+            if(!FarmDismissCompletedSale(tool))return;
+        } else if (FarmHasImage(frame, "shop_header.png", {80, 25, 230, 70})) {
             BoDieuKhien::BamChuot(tool->h_game, 844, 55);
         } else if (FarmHasImage(frame, "tieu_de_ban_moi.png", {15, 5, 400, 70})) {
             BoDieuKhien::BamChuot(tool->h_game, 915, 38);
@@ -701,18 +734,21 @@ void ThucHienDiBan(ThongTinTool* tool) {
         if (!FarmHasImage(frame, "bo_chon_tat_ca_moi.png", {545, 460, 150, 65}, 0.82)) break;
         BoDieuKhien::BamChuot(tool->h_game, 791, 480);
         bool finished = false;
-        for (int attempt = 0; attempt < 18 && tool->dangChay; ++attempt) {
+        for (int attempt = 0; attempt < 48 && tool->dangChay; ++attempt) {
             this_thread::sleep_for(chrono::milliseconds(500));
             frame = BoDieuKhien::ChupManHinh(tool->h_game);
-            if (FarmHasImage(frame, "xac_nhan_ban_moi.png", {300, 60, 350, 100}, 0.82)) {
+            auto resultOk=FarmCompletedSaleOk(frame);
+            if(resultOk.x>=0) {
+                if(!FarmDismissCompletedSale(tool))return;
+                finished=true;
+                break;
+            } else if (FarmHasImage(frame, "xac_nhan_ban_moi.png", {300, 60, 350, 100}, 0.82)) {
                 BoDieuKhien::BamChuot(tool->h_game, 480, 422);
             } else if (FarmHasImage(frame, "xac_nhan_ban_cao_cap_moi.png", {300, 60, 350, 100}, 0.82)) {
                 auto confirm = BoDieuKhien::TimAnhTrongVung(frame, "nut_xac_nhan_ban_moi.png", {495, 350, 225, 125}, 0.82);
                 if (confirm.x != -1) BoDieuKhien::BamChuot(tool->h_game, confirm.x, confirm.y);
             } else {
-                auto ok = BoDieuKhien::TimAnhTrongVung(frame, "ok.png", {300, 310, 380, 180}, 0.75);
-                if (ok.x != -1) { BoDieuKhien::BamChuot(tool->h_game, ok.x, ok.y); finished = true; break; }
-                if (FarmHasImage(frame, "chon_tu_dong_moi.png", {545, 460, 150, 65}, 0.82)) { finished = true; break; }
+                if (FarmSellScreenReady(frame)&&FarmHasImage(frame, "chon_tu_dong_moi.png", {545, 460, 150, 65}, 0.82)) { finished = true; break; }
             }
         }
         if (!finished) { tool->thongBaoStatus = "Chua xac minh ban xong; dung luong ban"; return; }
@@ -4338,6 +4374,14 @@ int main(int, char**) {
                                 if (!tab->dangChay && ImGui::Button("TEST MO BANG BAN", ImVec2(-1, 25))) {
                                     tab->dangChay = true;
                                     thread([tab]() { FarmOpenStore(tab, 2); tab->dangChay = false; }).detach();
+                                }
+                                if (!tab->dangChay && ImGui::Button("TEST DONG OK SAU BAN", ImVec2(-1, 25))) {
+                                    tab->dangChay=true;
+                                    thread([tab](){FarmDismissCompletedSale(tab);tab->dangChay=false;}).detach();
+                                }
+                                if (!tab->dangChay && ImGui::Button("TEST BAN TU DONG", ImVec2(-1, 25))) {
+                                    tab->dangChay=true;
+                                    thread([tab](){ThucHienDiBan(tab);tab->dangChay=false;}).detach();
                                 }
 
                                 // --- CẤU HÌNH FARM ---

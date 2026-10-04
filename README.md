@@ -1,9 +1,10 @@
 # BOT FARMER X DLee
 
-Auto nông trại cho LDPlayer, Windows 11/10 x64. Menu **BOT FARMER X DLee v0.1**, bản mới **v0.1.5**.
+Auto nông trại cho LDPlayer, Windows 11/10 x64. Menu **BOT FARMER X DLee v0.1**, bản mới **v0.1.6**.
 
-[Tải EXE v0.1.5](https://github.com/dleevn333/BOT-FARMER-X-DLee/releases/download/v0.1.5/BOT-FARMER-X-DLee-v0.1.5.exe) · [Bản phát hành](https://github.com/dleevn333/BOT-FARMER-X-DLee/releases/tag/v0.1.5)
+[Tải EXE v0.1.6](https://github.com/dleevn333/BOT-FARMER-X-DLee/releases/download/v0.1.6/BOT-FARMER-X-DLee-v0.1.6.exe) · [Bản phát hành](https://github.com/dleevn333/BOT-FARMER-X-DLee/releases/tag/v0.1.6)
 
+- Sửa kẹt OK sau bán: nhận hộp thoại/OK mới, thử lại có giới hạn và chờ bảng bán hiện lại trước khi chạy tiếp.
 - Sửa chọn trái thu hoạch: đọc từng ô, tên xuống dòng và lỗi OCR nhỏ; lấy vị trí ô thực tế, xác nhận dấu tick. Có nút thử bộ lọc và báo loại chưa chọn được.
 - Quét balo một lượt, nhớ cả hạt có/thiếu cho mọi loại đã chọn; mua thêm cập nhật lại, dùng hết đánh dấu thiếu. Có nút quét lại và bộ đếm lượt quét.
 - Đợi ảnh balo ổn định và nhận diện ảnh hạt nhỏ ở các mức phóng gần nhất, giữ ngưỡng xác nhận đúng loại.
@@ -14,6 +15,8 @@ Auto nông trại cho LDPlayer, Windows 11/10 x64. Menu **BOT FARMER X DLee v0.1
 - Lần đầu không tự tick; tự lưu/khôi phục theo tab LDPlayer, gồm cả danh sách trồng. Đọc cấu hình v0.1.1; không tự START.
 
 Chạy EXE một file đã kèm thư viện và ảnh, hoặc giải nén ZIP đầy đủ. Đặt vùng game 960 × 540, quét LDPlayer và chọn đúng tab trước khi START. STOP nhả cần di chuyển.
+
+15 kiểm tra bán/OK đã đạt; đã thử đóng hộp thoại đang kẹt và chạy luồng bán tự động đến khi trở về game trên LDPlayer.
 
 Xem [hướng dẫn](HUONG-DAN.md) và [build/kiểm tra](source/BUILD.md). 153 kiểm tra lọc trái và 40 kiểm tra cấu hình đã đạt; giữ 130 kiểm tra nhận diện/bộ nhớ balo của v0.1.4. Đã thử chọn nhiều trái trên LDPlayer và đổi nhiều loại hạt với cùng một lượt quét; Thu riêng Nho bằng Tên Tím đã thành công và các loại không chọn giữ nguyên số lượng. Luồng trồng thật đã kiểm tra ở v0.1.2. Không thử lại toàn bộ giao dịch mua/bán trong lần cập nhật này.
 
