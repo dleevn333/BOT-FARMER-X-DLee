@@ -88,6 +88,12 @@ inline int PlantSeedCount(const cv::Mat& frame) {
         for(wchar_t c:word.raw)if(c>=L'0' && c<=L'9'){++digits;value=value*10+(c-L'0');}
         if(digits>0 && digits<6)count=value;
     }
+    if(count<0) {
+        // OCR omits "x1" (observed as letters). Recognize only the verified
+        // one-seed glyph; other quantities still use OCR or the change check.
+        static const auto one=cv::imread("images/plant_count_one.png",cv::IMREAD_GRAYSCALE);
+        if(PlantCountIsOne(PlantCountMask(frame),one))count=1;
+    }
     return count;
 }
 inline void PlantCameraCloser(ThongTinTool* tool) {
@@ -276,7 +282,8 @@ inline bool PlantClickConfirmed(ThongTinTool* tool,const cv::Mat& before,PlantRi
     cv::Mat after;
     // During the planting animation the action button and its white count fade.
     // Wait for the count to become legible again before declaring failure.
-    for(int attempt=0;attempt<10&&tool->dangChay;++attempt) {
+    bool retried=false;
+    for(int attempt=0;attempt<16&&tool->dangChay;++attempt) {
         if(!PlantWait(tool,300))return false;
         after=PlantFrame(tool);
         if(after.empty()||PlantIsBag(after))return false;
@@ -289,6 +296,22 @@ inline bool PlantClickConfirmed(ThongTinTool* tool,const cv::Mat& before,PlantRi
         if(attempt>=5&&!previousMask.empty()&&!newMask.empty()
            &&cv::norm(previousMask,newMask,cv::NORM_L1)<8*255
            &&PlantHeldSeed(after)==seed&&PlantCountChanged(oldMask,newMask))return true;
+        // Retry a lost click once only when the same seed/count and a stable
+        // valid ring prove that the previous attempt consumed nothing.
+        if(attempt>=5&&!retried&&!oldMask.empty()&&!newMask.empty()
+           &&cv::norm(oldMask,newMask,cv::NORM_L1)<=3*255
+           &&PlantHeldSeed(after)==seed) {
+            auto valid=PlantFindValidRing(after);
+            if(valid.center.x>=0&&cv::norm(valid.center-ring.center)<=5) {
+                if(!PlantWait(tool,250))return false;
+                auto settled=PlantFrame(tool);auto settledRing=PlantFindValidRing(settled);
+                auto settledMask=PlantCountMask(settled);
+                if(settledRing.center.x>=0&&cv::norm(settledRing.center-valid.center)<=5
+                   &&!settledMask.empty()&&cv::norm(oldMask,settledMask,cv::NORM_L1)<=3*255) {
+                    PlantClick(tool,{763,325});retried=true;
+                }
+            }
+        }
         previousMask=newMask;
     }
     if(after.empty())return false;
@@ -307,6 +330,12 @@ inline bool PlantClickConfirmed(ThongTinTool* tool,const cv::Mat& before,PlantRi
 }
 
 inline void FarmPlantSelected(ThongTinTool* tool,int maxPlants=40) {
+    struct Report {
+        ThongTinTool* tool;
+        ~Report(){tool->ketQuaTrong=tool->dangChay?tool->thongBaoStatus:"Da dung luot trong; da trong "+std::to_string(tool->soCayVuaTrong)+" cay";}
+    } report{tool};
+    tool->soCayVuaTrong=0;
+    tool->henTrongCay=GetTickCount64()+60000;
     bool any=false;for(bool chosen:tool->cacHatCanTrong)any|=chosen;
     if(!any){tool->thongBaoStatus="Trong cay: chua chon hat de trong";return;}
     if(tool->hatTrongDaNho.valid&&tool->hatTrongDaNho.gameKey==reinterpret_cast<std::uintptr_t>(tool->h_game)) {
@@ -321,7 +350,6 @@ inline void FarmPlantSelected(ThongTinTool* tool,int maxPlants=40) {
     }
     PlantCloseBag(tool);
     PlantCameraCloser(tool);
-    tool->soCayVuaTrong=0;
     int skipped=0,moves=0,entrySteps=0;
     std::vector<cv::Point2f> visited;
     auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(200);

@@ -1,10 +1,10 @@
-# BOT FARMER X DLee — v0.1.6
+# BOT FARMER X DLee — v0.1.7
 
 Tên cửa sổ/menu: **BOT FARMER X DLee v0.1**.
 
 ## Chạy
 
-Chạy `BOT-FARMER-X-DLee-v0.1.6.exe` (đã kèm DLL/ảnh, không cần quyền quản trị), hoặc giải nén ZIP đầy đủ rồi chạy `autofarmnongtrai-update.exe`.
+Chạy `BOT-FARMER-X-DLee-v0.1.7.exe` (đã kèm DLL/ảnh, không cần quyền quản trị), hoặc giải nén ZIP đầy đủ rồi chạy `autofarmnongtrai-update.exe`.
 Đặt vùng game LDPlayer 960 × 540, bấm **QUET TAT CA LDPLAYER**, chọn đúng tab, chọn chức năng rồi **START BOT**. **STOP BOT** dừng và nhả cần di chuyển.
 
 ## Auto trồng cây
@@ -26,6 +26,16 @@ Mua thêm hạt thành công sẽ làm mới dữ liệu cho lượt trồng ti�
 Nút **QUET LAI HAT TRONG BALO** cập nhật khi bạn tự thay đổi đồ. Dòng **So luot quet** cho biết số lượt quét toàn bộ, không phải số hạt đã chọn. Dữ liệu balo chỉ nhớ trong lần chạy hiện tại; mỗi lần START hoặc mở lại EXE sẽ kiểm tra tồn kho mới. Danh sách đã chọn vẫn tự lưu như trước.
 
 Bot đợi ảnh hạt và vị trí thẻ ổn định sau khi mở/cuộn balo. Ảnh hạt nhỏ được đối chiếu thêm ở các mức phóng gần nhất, giữ nguyên ngưỡng xác nhận để tránh chọn nhầm loại. Gói chưa nhận ra được kiểm tra lại trên cùng trang trước khi kết thúc lượt quét.
+
+## Sửa trồng trong hiệu ứng thời tiết
+
+Hiệu ứng thời tiết làm vòng xanh hợp lệ nhạt màu (độ bão hòa dưới ngưỡng cũ). Bot nhận thêm vòng xanh nhạt, vẫn kiểm tra màu xanh, hình vành tròn, tâm đất nâu, vị trí gần nhân vật và xác nhận kết quả trước khi đếm cây. Không trồng chỉ vì thấy đất nâu.
+
+Ưu tiên khoảng đất nâu đủ rộng trong vùng nhìn thấy để tránh các khe nhỏ giữa cây đã mọc, điều chỉnh theo diện tích đất hiện có. Vẫn cần vòng xanh của game trước khi bấm. Nhận riêng chữ **x1** khi OCR bỏ sót hạt cuối cùng. Chỉ thử lại click một lần nếu hạt/số lượng chưa đổi và vòng xanh vẫn ổn định; nếu chưa xác nhận thì dừng lượt.
+
+START cho lượt trồng hạt có sẵn chạy trước thu hoạch/mua hàng; túi đầy vẫn ưu tiên bán. Mua hạt xong tiếp tục trồng. Hiện **Luot trong gan nhat** riêng để kết quả không bị STATUS mua/bán che mất. START đặt lại thời gian chờ trồng; một lượt chưa về được vườn cũng có thời gian chờ, tránh lặp liên tục.
+
+136 kiểm tra nhận diện/bộ nhớ hạt và 40 kiểm tra cấu hình đã đạt, gồm vòng xanh nhạt từ ảnh game, loại gần xám bị từ chối, điểm đất trên luống Bắp dày, x1/x2 và các số không được nhận nhầm thành 1. Đã thử trên LDPlayer: nhận vòng xanh nhạt, trồng Bắp, START trồng hạt Bắp cuối cùng và xác nhận 1 cây; hai loại hạt đang không có được bỏ qua, kết quả trồng giữ lại khi chuyển sang thu hoạch/bán.
 
 ## Sửa OK sau bán
 

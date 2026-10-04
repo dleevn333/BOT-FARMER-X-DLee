@@ -126,6 +126,7 @@ struct ThongTinTool {
     bool cacHatCanTrong[SO_HAT_TRONG] = {};
     unsigned long long henTrongCay = 0;
     int soCayVuaTrong = 0;
+    std::string ketQuaTrong = "Chua chay luot trong";
     PlantInventoryCache hatTrongDaNho;
     std::string ketQuaLocTrai;
 
@@ -4089,6 +4090,7 @@ void AutoSanThoiTietCauCa2(ThongTinTool* thongTin) {
 
 void LuongTuDongFarm(ThongTinTool* thongTin) {
     thongTin->hatTrongDaNho.Invalidate();
+    thongTin->henTrongCay=0;
     thongTin->thoiGianMuaHatGanNhat = chrono::steady_clock::now() - chrono::seconds(120);
     thongTin->thoiGianMuaCongCuGanNhat = chrono::steady_clock::now() - chrono::seconds(300);
     
@@ -4170,13 +4172,6 @@ void LuongTuDongFarm(ThongTinTool* thongTin) {
             }
         }
 
-        // Đặt đoạn này phía trên hoặc phía dưới logic check túi đầy tùy ông
-        if (thongTin->kichHoatThuHoachNhanh) {
-            // Ông có thể thêm điều kiện thời gian hoặc cứ để nó chạy tuần hoàn
-            ThuHoachTenTim(thongTin);
-            this_thread::sleep_for(chrono::seconds(10)); // Nghỉ một chút sau mỗi đợt
-        }
-
         // --- BƯỚC 1: QUÉT TÚI ĐẦY ---
         cv::Rect roiCheckTui(340, 93, 287, 71);
         cv::Rect safeRoi = roiCheckTui & cv::Rect(0, 0, anhChup.cols, anhChup.rows);
@@ -4203,6 +4198,17 @@ void LuongTuDongFarm(ThongTinTool* thongTin) {
                 thongTin->trangThaiHienTai = STATE_IDLE;
                 continue;
             }
+        }
+
+        // Plant existing selected seeds before optional harvesting/shop travel.
+        // A full bag still gets selling priority above; START resets this timer.
+        if (thongTin->kichHoatTrongCay && GetTickCount64() >= thongTin->henTrongCay) {
+            FarmPlantSelected(thongTin);
+            if(!thongTin->dangChay)break;
+        }
+        if (thongTin->kichHoatThuHoachNhanh) {
+            ThuHoachTenTim(thongTin);
+            if(!PlantWait(thongTin,10000))break;
         }
 
         // --- BƯỚC 3: KIỂM TRA GIỜ MUA HÀNG ---
@@ -4244,9 +4250,6 @@ void LuongTuDongFarm(ThongTinTool* thongTin) {
             }
         }
 
-        if (thongTin->kichHoatTrongCay && GetTickCount64() >= thongTin->henTrongCay) {
-            FarmPlantSelected(thongTin);
-        }
         thongTin->trangThaiHienTai = STATE_IDLE;
         this_thread::sleep_for(chrono::milliseconds(1500));
     }
@@ -4448,6 +4451,7 @@ int main(int, char**) {
                                         }).detach();
                                     }
                                     ImGui::Text("Balo: %s | So luot quet: %u",tab->hatTrongDaNho.valid?"da nho":"chua quet",tab->hatTrongDaNho.scans.load());
+                                    ImGui::TextWrapped("Luot trong gan nhat: %s",tab->ketQuaTrong.c_str());
                                     if (ImGui::CollapsingHeader(" DANH SACH HAT TRONG", ImGuiTreeNodeFlags_DefaultOpen)) {
                                         if (ImGui::BeginChild("VungHatTrong", ImVec2(0, 160), true)) {
                                             ImGui::Columns(2, "HatTrongCols");

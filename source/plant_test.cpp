@@ -35,6 +35,19 @@ int main(int argc,char** argv){try {
     auto live=cv::imread(assets+"/live-blue-ring.jpg");
     auto smallRing=PlantFindValidRing(live);
     Check(smallRing.center.x>=0&&cv::norm(smallRing.center-cv::Point(453,305))<6,"Recognize actual small ring after moving off an occupied crop");
+    auto weather=cv::imread(assets+"/weather-ring.png");
+    auto faded=PlantFindValidRing(weather);
+    Check(faded.center.x>=0&&cv::norm(faded.center-cv::Point(505,301))<6,"Recognize actual valid ring desaturated by the sunny weather overlay");
+    cv::Mat weatherHsv;cv::cvtColor(weather,weatherHsv,cv::COLOR_BGR2HSV);
+    for(int y=0;y<weatherHsv.rows;++y)for(int x=0;x<weatherHsv.cols;++x) {
+        auto& pixel=weatherHsv.at<cv::Vec3b>(y,x);
+        if(pixel[0]>=82&&pixel[0]<=108)pixel[1]=10;
+    }
+    cv::Mat almostGray;cv::cvtColor(weatherHsv,almostGray,cv::COLOR_HSV2BGR);
+    Check(PlantFindValidRing(almostGray).center.x<0,"Near-gray particles cannot become a valid planting ring");
+    auto crowded=cv::imread(assets+"/crowded-ground.png");
+    auto clearGround=PlantNextSoilSpot(crowded,{});
+    Check(clearGround.x>=540&&clearGround.y>=195,"Walk toward the actual open patch rather than gaps between mature corn");
     auto noRing=cv::Mat(540,960,CV_8UC3,cv::Scalar(55,85,115));
     Check(PlantFindValidRing(noRing).center.x<0,"Bare brown soil is not permission to plant");
     cv::Mat hsv;cv::cvtColor(ref,hsv,cv::COLOR_BGR2HSV);
@@ -59,6 +72,12 @@ int main(int argc,char** argv){try {
     Check(PlantCountChanged(thirteen,eleven),"Short x11 count is confirmed by its changed glyphs when OCR omits it");
     Check(!PlantCountChanged(thirteen,thirteen),"An unchanged quantity never confirms planting");
     Check(!PlantCountChanged(thirteen,cv::Mat::zeros(thirteen.size(),CV_8U)),"A faded or missing count never confirms planting");
+    auto oneGlyph=cv::imread(images+"/plant_count_one.png",cv::IMREAD_GRAYSCALE);
+    auto oneCount=PlantCountMask(cv::imread(assets+"/count-one-native.png"));
+    auto twoCount=PlantCountMask(cv::imread(assets+"/count-two-native.png"));
+    Check(PlantCountIsOne(oneCount,oneGlyph),"Recognize the actual last seed when OCR omits x1");
+    Check(!PlantCountIsOne(twoCount,oneGlyph)&&!PlantCountIsOne(thirteen,oneGlyph)&&!PlantCountIsOne(eleven,oneGlyph),"Other counts do not become one seed");
+    Check(!PlantCountIsOne(cv::Mat::zeros(oneCount.size(),CV_8U),oneGlyph),"A faded count cannot become one seed");
     PlantInventorySnapshot observed;
     for(auto card:PlantBagCards(bag)) {
         auto identity=PlantIdentifySeed(bag,{card.x+18,card.y+55,card.width-36,76},glyphs);

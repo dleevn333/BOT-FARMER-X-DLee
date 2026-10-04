@@ -29,7 +29,9 @@ inline PlantRing PlantFindValidRing(const cv::Mat& frame, cv::Point avatar = {48
     if (frame.empty()) return best;
     cv::Mat hsv, cyan;
     cv::cvtColor(frame, hsv, cv::COLOR_BGR2HSV);
-    cv::inRange(hsv, cv::Scalar(82,65,65), cv::Scalar(108,235,255), cyan);
+    // Sunny/weather overlays desaturate the valid cyan ring (observed S=25-60).
+    // Keep its hue, annulus geometry, brown center and near-avatar checks.
+    cv::inRange(hsv, cv::Scalar(82,25,65), cv::Scalar(108,235,255), cyan);
     cv::Rect roi(avatar.x-180,avatar.y-145,360,235);
     roi &= cv::Rect(0,0,frame.cols,frame.rows);
     if (roi.empty()) return best;
@@ -116,6 +118,14 @@ inline bool PlantCountChanged(const cv::Mat& before,const cv::Mat& after) {
     cv::Mat difference;cv::bitwise_xor(before,after,difference);
     return cv::countNonZero(difference)>=18;
 }
+inline bool PlantCountIsOne(const cv::Mat& mask,const cv::Mat& one) {
+    if(mask.empty()||one.empty()||mask.size()!=one.size())return false;
+    int a=cv::countNonZero(mask),b=cv::countNonZero(one);
+    if(a<40||b<40)return false;
+    cv::Mat intersection,united;
+    cv::bitwise_and(mask,one,intersection);cv::bitwise_or(mask,one,united);
+    return double(cv::countNonZero(intersection))/cv::countNonZero(united)>=.90;
+}
 inline PlantSeedIdentity PlantIdentifySeed(const cv::Mat& frame, cv::Rect search,
     const std::vector<cv::Mat>& glyphs, double threshold=.94, double margin=.05) {
     PlantSeedIdentity result;
@@ -188,10 +198,19 @@ inline cv::Point PlantNextSoilSpot(const cv::Mat& frame,const std::vector<cv::Po
     cv::Mat hsv,soil;
     cv::cvtColor(frame,hsv,cv::COLOR_BGR2HSV);
     cv::inRange(hsv,cv::Scalar(3,45,20),cv::Scalar(26,195,185),soil);
-    cv::erode(soil,soil,cv::getStructuringElement(cv::MORPH_ELLIPSE,{17,17}));
+    // Gaps between mature plants are brown too, but cannot fit another crop.
+    // Walk toward broad clear ground; the game ring remains the placement check.
+    cv::Mat clearance;
+    cv::distanceTransform(soil,clearance,cv::DIST_L2,cv::DIST_MASK_PRECISE);
+    float maximumClearance=0;
+    for(int y=110;y<std::min(370,frame.rows);y+=18)for(int x=120;x<std::min(730,frame.cols);x+=18) {
+        if((x<315&&y<220)||(x>595&&y<195)||(x<255&&y>325))continue;
+        maximumClearance=std::max(maximumClearance,clearance.at<float>(y,x));
+    }
+    float requiredClearance=std::max(9.f,std::min(28.f,maximumClearance*.70f));
     cv::Point nearest(-1,-1);double minimum=1e20;
     for(int y=110;y<std::min(370,frame.rows);y+=18)for(int x=120;x<std::min(730,frame.cols);x+=18) {
-        if(!soil.at<uchar>(y,x))continue;
+        if(clearance.at<float>(y,x)<requiredClearance)continue;
         if((x<315&&y<220)||(x>595&&y<195)||(x<255&&y>325))continue;
         bool tried=false;
         for(auto p:visited)if(cv::norm(p-cv::Point2f(float(x),float(y)))<30){tried=true;break;}
