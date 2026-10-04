@@ -1,10 +1,10 @@
-# BOT FARMER X DLee — v0.1.4
+# BOT FARMER X DLee — v0.1.5
 
 Tên cửa sổ/menu: **BOT FARMER X DLee v0.1**.
 
 ## Chạy
 
-Chạy `BOT-FARMER-X-DLee-v0.1.4.exe` (đã kèm DLL/ảnh, không cần quyền quản trị), hoặc giải nén ZIP đầy đủ rồi chạy `autofarmnongtrai-update.exe`.
+Chạy `BOT-FARMER-X-DLee-v0.1.5.exe` (đã kèm DLL/ảnh, không cần quyền quản trị), hoặc giải nén ZIP đầy đủ rồi chạy `autofarmnongtrai-update.exe`.
 Đặt vùng game LDPlayer 960 × 540, bấm **QUET TAT CA LDPLAYER**, chọn đúng tab, chọn chức năng rồi **START BOT**. **STOP BOT** dừng và nhả cần di chuyển.
 
 ## Auto trồng cây
@@ -26,6 +26,14 @@ Mua thêm hạt thành công sẽ làm mới dữ liệu cho lượt trồng ti�
 Nút **QUET LAI HAT TRONG BALO** cập nhật khi bạn tự thay đổi đồ. Dòng **So luot quet** cho biết số lượt quét toàn bộ, không phải số hạt đã chọn. Dữ liệu balo chỉ nhớ trong lần chạy hiện tại; mỗi lần START hoặc mở lại EXE sẽ kiểm tra tồn kho mới. Danh sách đã chọn vẫn tự lưu như trước.
 
 Bot đợi ảnh hạt và vị trí thẻ ổn định sau khi mở/cuộn balo. Ảnh hạt nhỏ được đối chiếu thêm ở các mức phóng gần nhất, giữ nguyên ngưỡng xác nhận để tránh chọn nhầm loại. Gói chưa nhận ra được kiểm tra lại trên cùng trang trước khi kết thúc lượt quét.
+
+## Sửa lọc trái thu hoạch
+
+Chế độ **Chon trai** đọc riêng tên trong từng ô nông sản, nhận tên xuống dòng, bỏ dấu tiếng Việt và xử lý lỗi OCR nhỏ khi chỉ có một loại phù hợp. Không dùng khớp một phần để biến Dưa hấu thành Dưa hoặc Táo đường thành Táo. Vị trí bấm/dấu tick lấy từ ô thực tế, rồi kiểm tra đã tick trước khi áp dụng.
+
+**TEST LOC TRAI DA CHON** chỉ thiết lập các dấu tick và để bộ lọc mở cho bạn xem, không bấm thu hoạch hoặc bán. **TEST THU HOACH DA CHON** chạy thu hoạch thật. Dòng trạng thái ghi số loại chọn thành công/tổng loại yêu cầu và tên chưa chọn được. Các trái bị game ẩn vẫn bỏ qua, không cuộn tìm; giữ cách thu Tên Tím hoặc thu thường theo lựa chọn của bạn.
+
+153 kiểm tra tên/lỗi OCR/vị trí ô đã đạt, gồm đọc Bắp, Dâu tây, Nho từ ảnh lọc thực tế và Trăng khuyết/Nhân sâm từ ảnh trước. Đã đối chiếu dấu tick nhiều loại trên LDPlayer và thu riêng Nho bằng Tên Tím thành công; Bắp 14, Dâu tây 3 và Rau xà lách 3 giữ nguyên sau lượt thử. Không thử thu hoạch thật toàn bộ 31 loại hoặc thử lại giao dịch mua/bán trong bản này.
 
 ## Lưu lựa chọn và thu hoạch
 

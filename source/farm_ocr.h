@@ -6,6 +6,7 @@
 #include <winrt/Windows.Media.Ocr.h>
 #include <winrt/Windows.Storage.Streams.h>
 #include <cctype>
+#include "farm_crop_match.h"
 
 struct FarmOcrWord { std::string text; cv::Rect box; std::wstring raw; };
 
@@ -69,4 +70,39 @@ inline cv::Point FarmFindCrop(const std::vector<FarmOcrWord>& words, const char*
             return cv::Point(tile.x + 85, tile.y + 24);
     }
     return {-1, -1};
+}
+
+struct FarmCropChoice {cv::Rect tile;int id=-1;std::string text;};
+inline FarmCropChoice FarmReadCropChoice(const cv::Mat& frame,cv::Rect tile) {
+    FarmCropChoice choice{tile};
+    auto label=cv::Rect(tile.x+34,tile.y+1,tile.width-59,tile.height-2)&cv::Rect(0,0,frame.cols,frame.rows);
+    if(label.empty())return choice;
+    auto read=[](const cv::Mat& image) {
+        std::string text;
+        for(const auto& word:FarmReadText(image,{0,0,image.cols,image.rows}))text+=word.text;
+        return text;
+    };
+    // Isolated labels prevent OCR from grouping neighbouring cards together
+    // or omitting short names while reading the entire filter panel.
+    cv::Mat padded;cv::copyMakeBorder(frame(label),padded,10,10,10,10,cv::BORDER_CONSTANT,cv::Scalar(255,255,255));
+    choice.text=read(padded);
+    auto primary=FarmMatchCrop(choice.text);
+    if(primary.id>=0&&primary.edits==0){choice.id=primary.id;return choice;}
+    cv::Mat gray,contrast;
+    cv::cvtColor(frame(label),gray,cv::COLOR_BGR2GRAY);
+    cv::threshold(gray,gray,160,255,cv::THRESH_BINARY);
+    cv::resize(gray,gray,{},2,2,cv::INTER_NEAREST);
+    cv::copyMakeBorder(gray,gray,16,16,16,16,cv::BORDER_CONSTANT,cv::Scalar(255));
+    cv::cvtColor(gray,contrast,cv::COLOR_GRAY2BGR);
+    auto retryText=read(contrast);
+    auto retry=FarmMatchCrop(retryText);
+    if(primary.id>=0&&retry.id>=0&&primary.id!=retry.id)return choice;
+    auto match=retry.id>=0?retry:primary;
+    if(match.id>=0){choice.id=match.id;if(retry.id>=0)choice.text=retryText;}
+    return choice;
+}
+inline std::vector<FarmCropChoice> FarmReadCropChoices(const cv::Mat& frame) {
+    std::vector<FarmCropChoice> choices;
+    for(auto tile:FarmCropTiles(frame))choices.push_back(FarmReadCropChoice(frame,tile));
+    return choices;
 }

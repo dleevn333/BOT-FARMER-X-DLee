@@ -17,6 +17,7 @@
 
 
 #include <atomic>
+#include "farm_crop_match.h"
 #include "farm_ocr.h"
 #include "farm_settings.h"
 #include "farm_plant_vision.h"
@@ -42,15 +43,11 @@ enum BotState {
 };
 
 constexpr int SO_HAT_MUA = 29;
-constexpr int SO_NONG_SAN = 31;
 string ds_anh_chu_qua[] = {
     "txt_crop_carot.png", "txt_crop_cucai.png", "txt_dautay.png", "txt_crop_vietquat.png", "txt_crop_khoaitay.png", "txt_crop_nam.png", "txt_hatbap.png", "txt_crop_cachua.png", "txt_hatsung.png", "txt_crop_anhdao.png", "txt_crop_khoailang.png", "txt_crop_saguaro.png", "txt_crop_gaivang.png", "txt_hattao.png", "txt_crop_hatde.png", "txt_hatnho.png", "txt_crop_cholla.png", "txt_crop_mangcau.png", "txt_crop_legai.png", "txt_crop_bingo.png", "txt_crop_lua.png", "txt_crop_duahau.png", "txt_hatdua.png", "txt_hatxoai.png", "txt_hatdudu.png", "txt_crop_cayphong.png", "txt_crop_caydau.png", "txt_crop_khe.png", "txt_hattaoduong.png", "txt_trangkhuyet.png", "txt_nhansam.png"
 };
 const char* ds_hat_giongmua[] = {
     "Ca rot", "Cu cai", "Dau tay", "Viet quat", "Khoai tay", "Nam", "Bap", "Ca chua", "Sung", "Anh dao", "Khoai lang", "Xuong rong Saguaro", "Xuong rong gai vang", "Tao", "Hat de", "Nho", "Xuong rong Cholla", "Mang cau", "Xuong rong le gai", "Bi ngo", "Lua", "Dua hau", "Dua", "Xoai", "Du du", "Cay phong", "Cay dau", "Khe", "Tao duong"
-};
-const char* ds_hat_gionghai[] = {
-    "Ca rot", "Cu cai", "Dau tay", "Viet quat", "Khoai tay", "Nam", "Bap", "Ca chua", "Sung", "Anh dao", "Khoai lang", "Xuong rong Saguaro", "Xuong rong gai vang", "Tao", "Hat de", "Nho", "Xuong rong Cholla", "Mang cau", "Xuong rong le gai", "Bi ngo", "Lua", "Dua hau", "Dua", "Xoai", "Du du", "Cay phong", "Cay dau", "Khe", "Tao duong", "Trang khuyet", "Nhan sam"
 };
 
 string ds_anh_cong_cu[] = { 
@@ -129,6 +126,7 @@ struct ThongTinTool {
     unsigned long long henTrongCay = 0;
     int soCayVuaTrong = 0;
     PlantInventoryCache hatTrongDaNho;
+    std::string ketQuaLocTrai;
 
     long long time_cho_hoi_qua = 0;
     int buocHienTai = 0;
@@ -726,12 +724,9 @@ void ThucHienDiBan(ThongTinTool* tool) {
     tool->thongBaoStatus = completed ? "Da xu ly luong ban" : "Khong co nong san duoc chon de ban";
 }
 
-void ThuHoachTenTim(ThongTinTool* tool) {
-    if (GetTickCount64() < tool->time_cho_hoi_qua) {
-        tool->thongBaoStatus = "Cho trai chin: " + to_string((tool->time_cho_hoi_qua - GetTickCount64()) / 1000) + "s";
-        return;
-    }
-    if (!FarmOpenHarvest(tool)) { tool->time_cho_hoi_qua = GetTickCount64() + 15000; return; }
+bool FarmPrepareHarvestFilter(ThongTinTool* tool,bool apply=true) {
+    tool->ketQuaLocTrai.clear();
+    if (!FarmOpenHarvest(tool)) { tool->time_cho_hoi_qua = GetTickCount64() + 15000; return false; }
     bool filterOpened = false;
     for (int attempt = 0; attempt < 10 && tool->dangChay; ++attempt) {
         auto screen = BoDieuKhien::ChupManHinh(tool->h_game);
@@ -740,7 +735,7 @@ void ThuHoachTenTim(ThongTinTool* tool) {
         if (p.x != -1) BoDieuKhien::BamChuot(tool->h_game, p.x, p.y);
         this_thread::sleep_for(chrono::milliseconds(450));
     }
-    if (!filterOpened) { tool->thongBaoStatus = "Khong mo duoc bo loc"; FarmCloseHarvest(tool); return; }
+    if (!filterOpened) { tool->thongBaoStatus = "Khong mo duoc bo loc"; FarmCloseHarvest(tool); return false; }
 
     // Reset both tabs so selections from an earlier mode cannot leak into this one.
     BoDieuKhien::BamChuot(tool->h_game, 60, 93);
@@ -761,23 +756,25 @@ void ThuHoachTenTim(ThongTinTool* tool) {
     int selected = 0;
     if (tool->modeThuHoachTenTim == CHE_DO_CHON_HAT) {
         auto screen = BoDieuKhien::ChupManHinh(tool->h_game);
-        auto words = FarmReadText(screen, {32, 110, 878, 322});
+        auto choices=FarmReadCropChoices(screen);
+        int requested=0;std::string missing;
         for (int i = 0; i < SO_NONG_SAN && tool->dangChay; ++i) {
             if (!tool->cacHatDuocChon[i]) continue;
-            cv::Point crop = FarmFindCrop(words, ds_hat_gionghai[i]);
-            if (crop.x == -1 && FileTonTai(ds_anh_chu_qua[i])) {
-                crop = BoDieuKhien::TimAnhTrongVung(screen, ds_anh_chu_qua[i], {32, 110, 878, 322}, 0.82);
-                if (crop.x != -1) {
-                    int col = (crop.x - 32) / 175;
-                    int row = (crop.y - 120) / 48;
-                    crop = {32 + 175 * col + 85, 120 + 48 * row + 24};
-                }
+            ++requested;
+            auto found=std::find_if(choices.begin(),choices.end(),[&](const auto& item){return item.id==i;});
+            if(found==choices.end()&&i!=13&&i!=22&&FileTonTai(ds_anh_chu_qua[i])) {
+                // Keep legacy images only for an unreadable label; never
+                // override a different readable crop or prefix-match Dua/Tao.
+                found=std::find_if(choices.begin(),choices.end(),[&](const auto& item){
+                    return item.id<0&&item.text.empty()&&FarmHasImage(screen,ds_anh_chu_qua[i].c_str(),item.tile,.90);
+                });
             }
-            if (crop.x == -1) {
-                tool->thongBaoStatus = "Khong co " + string(ds_hat_gionghai[i]) + ": bo qua, khong cuon";
+            if (found==choices.end()) {
+                if(!missing.empty())missing+=", ";missing+=ds_hat_gionghai[i];
                 continue;
             }
-            cv::Point checkbox(crop.x + 67, crop.y + 5);
+            auto crop=FarmCropClick(found->tile);
+            auto checkbox=FarmCropCheckbox(found->tile);
             bool checked = false;
             for (int retry = 0; retry < 2 && tool->dangChay; ++retry) {
                 auto before = BoDieuKhien::ChupManHinh(tool->h_game);
@@ -788,22 +785,37 @@ void ThuHoachTenTim(ThongTinTool* tool) {
                 if (FarmChecked(after, checkbox)) { checked = true; break; }
             }
             if (checked) ++selected;
+            else {if(!missing.empty())missing+=", ";missing+=ds_hat_gionghai[i];}
         }
+        tool->ketQuaLocTrai="Bo loc: "+std::to_string(selected)+"/"+std::to_string(requested)+" loai";
+        if(!missing.empty())tool->ketQuaLocTrai+="; chua chon duoc: "+missing;
+        tool->thongBaoStatus=tool->ketQuaLocTrai;
         if (selected == 0) {
-            tool->thongBaoStatus = "Khong co trai da chon; nghi 5 phut (khong cuon)";
-            FarmCloseHarvest(tool);
-            tool->time_cho_hoi_qua = GetTickCount64() + 300000;
-            return;
+            if(apply)FarmCloseHarvest(tool);
+            bool unread=std::any_of(choices.begin(),choices.end(),[](const auto& item){return item.id<0&&item.text.empty();});
+            tool->time_cho_hoi_qua = GetTickCount64() + (unread?15000:300000);
+            return false;
         }
     }
-    if (!tool->dangChay) return;
+    else tool->ketQuaLocTrai="Bo loc: "+std::string(exclude?"hai loc bo bien the":"hai ALL");
+    if (!tool->dangChay) return false;
+    if(!apply){tool->thongBaoStatus=tool->ketQuaLocTrai+"; dang hien bo loc de kiem tra";return true;}
     BoDieuKhien::BamChuot(tool->h_game, 564, 472);
     bool applied = false;
     for (int retry = 0; retry < 10 && tool->dangChay; ++retry) {
         this_thread::sleep_for(chrono::milliseconds(350));
         if (FarmIsHarvest(BoDieuKhien::ChupManHinh(tool->h_game))) { applied = true; break; }
     }
-    if (!applied) { tool->thongBaoStatus = "Khong ap dung duoc bo loc"; FarmCloseHarvest(tool); return; }
+    if (!applied) { tool->thongBaoStatus = "Khong ap dung duoc bo loc"; FarmCloseHarvest(tool); return false; }
+    return true;
+}
+
+void ThuHoachTenTim(ThongTinTool* tool) {
+    if (GetTickCount64() < tool->time_cho_hoi_qua) {
+        tool->thongBaoStatus = "Cho trai chin: " + to_string((tool->time_cho_hoi_qua - GetTickCount64()) / 1000) + "s";
+        return;
+    }
+    if(!FarmPrepareHarvestFilter(tool))return;
 
     auto screen = BoDieuKhien::ChupManHinh(tool->h_game);
     bool locked = FarmHasImage(screen, "khoa_thu_hoach.png", {895, 450, 50, 65}, 0.75);
@@ -882,6 +894,7 @@ void ThuHoachTenTim(ThongTinTool* tool) {
         tool->thongBaoStatus = "Da bam " + to_string(harvested) + " luot thu hoach thuong";
     }
     FarmCloseHarvest(tool);
+    if(!tool->ketQuaLocTrai.empty())tool->thongBaoStatus+="; "+tool->ketQuaLocTrai;
     tool->time_cho_hoi_qua = GetTickCount64() + 30000;
     if (tool->kichHoatBan && tool->dangChay) ThucHienDiBan(tool);
 }
@@ -4299,6 +4312,10 @@ int main(int, char**) {
                                 if (!tab->dangChay && ImGui::Button("TEST MO THU HOACH MOI", ImVec2(-1, 28))) {
                                     tab->dangChay = true;
                                     thread([tab]() { FarmOpenHarvest(tab); tab->dangChay = false; }).detach();
+                                }
+                                if (!tab->dangChay && ImGui::Button("TEST LOC TRAI DA CHON", ImVec2(-1, 28))) {
+                                    tab->dangChay=true;
+                                    thread([tab](){FarmPrepareHarvestFilter(tab,false);tab->dangChay=false;}).detach();
                                 }
                                 if (!tab->dangChay && ImGui::Button("TEST THU HOACH DA CHON", ImVec2(-1, 28))) {
                                     tab->time_cho_hoi_qua = 0;
