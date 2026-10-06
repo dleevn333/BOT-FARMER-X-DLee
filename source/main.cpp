@@ -22,6 +22,7 @@
 #include "farm_ocr.h"
 #include "farm_settings.h"
 #include "farm_sell_vision.h"
+#include "farm_notice_vision.h"
 #include "farm_plant_vision.h"
 #include "farm_plant_inventory.h"
 #include "farm_garden_plan.h"
@@ -337,6 +338,8 @@ void TaoHinhAnhDich();
 void DonDepHinhAnhDich();
 LRESULT WINAPI XuLyTinHieuCuaSo(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+#include "farm_notice_runtime.h"
+
 class BoDieuKhien {
 public:
     static cv::Mat ChupManHinh(HWND hWnd) {
@@ -376,6 +379,8 @@ public:
         cv::Mat res;
         cv::cvtColor(bmp, res, cv::COLOR_BGRA2BGR);
 
+        if(!farmNoticeRecovering&&farmNoticeOwner&&farmNoticeOwner->dangChay&&hWnd==farmNoticeOwner->h_game)
+            return FarmRecoverNotice(hWnd,res);
         return res;
     }
 
@@ -564,6 +569,56 @@ bool FarmIsHarvest(const cv::Mat& screen) {
     if (screen.empty() || screen.cols < 420 || screen.rows < 65) return false;
     return FarmHasImage(screen, "tieu_de_thu_hoach.png", {15, 5, 400, 60}) &&
         cv::mean(screen(cv::Rect(260, 20, 100, 20)))[2] > 190;
+}
+
+
+bool FarmNoticeReadyFrame(const cv::Mat& raw) {
+    if(raw.empty())return false;cv::Mat frame;
+    if(raw.size()!=cv::Size(960,540))cv::resize(raw,frame,{960,540});else frame=raw;
+    if(FarmIsHarvest(frame)||FarmHasImage(frame,"plant_bag_header.png",{750,0,210,90},.86))return true;
+    if(FarmHasImage(frame,"shop_header.png",{80,25,230,70},.83)&&cv::mean(frame(cv::Rect(100,35,170,30)))[2]>185)return true;
+    if(FarmHasImage(frame,"tieu_de_ban_moi.png",{15,5,400,70},.83)&&cv::mean(frame(cv::Rect(260,20,100,20)))[2]>190)return true;
+    return FarmHasImage(frame,"nut_thu_hoach_moi.png",{550,40,400,210},.85)
+        ||FarmHasImage(frame,"plant_nha_ta.png",{595,35,145,90},.85);
+}
+cv::Mat FarmRecoverNotice(HWND game,const cv::Mat& original) {
+    auto* tool=farmNoticeOwner;
+    if(!tool||!tool->dangChay||farmNoticeRecovering)return original;
+    static const auto title=cv::imread("images/notice_title.png"),ok=cv::imread("images/notice_ok.png"),body=cv::imread("images/notice_not_ready_body.png");
+    auto notice=FarmFindNotice(original,title,ok,body);if(notice.kind==FarmNoticeKind::None)return original;
+    struct Guard {Guard(){farmNoticeRecovering=true;}~Guard(){farmNoticeRecovering=false;}} guard;
+    auto wait=[&](int ms){for(int elapsed=0;elapsed<ms&&tool->dangChay;elapsed+=40)std::this_thread::sleep_for(std::chrono::milliseconds(std::min(40,ms-elapsed)));return tool->dangChay.load();};
+    const auto kind=notice.kind;
+    tool->thongBaoStatus=kind==FarmNoticeKind::NotReady?"Cay chua du lon: dong OK, cho danh sach cap nhat":"Co nhiem vu moi: dong OK va tiep tuc";
+    // A modal can still be moving when first captured. Verify it before input.
+    if(!wait(220))return original;
+    auto current=BoDieuKhien::ChupManHinh(game);auto stable=FarmFindNotice(current,title,ok,body);
+    if(stable.kind!=FarmNoticeKind::None&&(stable.kind!=kind||cv::norm(stable.ok-notice.ok)>5))return current;
+    int clicks=0,ready=0;
+    auto deadline=GetTickCount64()+120000, nextClick=GetTickCount64();
+    while(tool->dangChay&&GetTickCount64()<deadline) {
+        notice=FarmFindNotice(current,title,ok,body);
+        if(notice.kind!=FarmNoticeKind::None) {
+            ready=0;
+            if(GetTickCount64()>=nextClick&&clicks<3) {
+                BoDieuKhien::BamChuot(game,notice.ok.x,notice.ok.y);++clicks;nextClick=GetTickCount64()+3000;
+            }
+        } else {
+            tool->thongBaoStatus="Da dong thong bao; cho game tai xong...";
+            if(FarmNoticeReadyFrame(current))++ready;else ready=0;
+            if(ready>=2) {
+                if(kind==FarmNoticeKind::NotReady)throw FarmNoticeRetry{kind,true};
+                tool->thongBaoStatus="Da dong thong bao nhiem vu; tiep tuc luong";
+                return current;
+            }
+        }
+        if(!wait(350))return current;
+        auto renewed=FindWindowExA(tool->h_cha,NULL,"RenderWindow",NULL);
+        if(renewed){game=renewed;tool->h_game=renewed;}
+        current=BoDieuKhien::ChupManHinh(game);
+    }
+    if(tool->dangChay)throw FarmNoticeRetry{kind,false};
+    return current;
 }
 
 bool FarmIsFilter(const cv::Mat& screen) {
@@ -4096,6 +4151,7 @@ void AutoSanThoiTietCauCa2(ThongTinTool* thongTin) {
 
 
 void LuongTuDongFarm(ThongTinTool* thongTin) {
+    FarmNoticeScope notificationScope(thongTin);
     thongTin->hatTrongDaNho.Invalidate();
     thongTin->henTrongCay=0;
     thongTin->thoiGianMuaHatGanNhat = chrono::steady_clock::now() - chrono::seconds(120);
@@ -4106,6 +4162,7 @@ void LuongTuDongFarm(ThongTinTool* thongTin) {
     
 
     while (thongTin->dangChay) {
+      try {
         thongTin->h_game = FindWindowExA(thongTin->h_cha, NULL, "RenderWindow", NULL);
         if (!thongTin->h_game) {
             thongTin->thongBaoStatus = "Loi: Khong thay Game!";
@@ -4259,6 +4316,23 @@ void LuongTuDongFarm(ThongTinTool* thongTin) {
 
         thongTin->trangThaiHienTai = STATE_IDLE;
         this_thread::sleep_for(chrono::milliseconds(1500));
+      } catch(const FarmNoticeRetry& notice) {
+        thongTin->trangThaiHienTai=STATE_IDLE;
+        if(!notice.closed) {
+            thongTin->thongBaoStatus="Thong bao/game chua san sang; da dung bot de tranh bam sai";
+            thongTin->dangChay=false;
+        } else {
+            // Leave the stale list and let the next scheduled harvest refresh it.
+            thongTin->time_cho_hoi_qua=GetTickCount64()+30000;
+            try {
+                FarmCloseHarvest(thongTin);
+                thongTin->thongBaoStatus="Da dong OK cay chua lon; cho 30 giay truoc luot thu hoach tiep";
+            } catch(const FarmNoticeRetry&) {
+                thongTin->dangChay=false;
+                thongTin->thongBaoStatus="Thong bao moi chua dong; da dung bot de tranh bam sai";
+            }
+        }
+      }
     }
 }
 int main(int, char**) {

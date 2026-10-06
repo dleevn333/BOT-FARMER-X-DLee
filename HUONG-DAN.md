@@ -1,13 +1,23 @@
-# BOT FARMER X DLee — v0.1.9
+# BOT FARMER X DLee — v0.1.10
 
-Bản v0.1.9 bỏ toàn bộ nút TEST, trồng thử một cây, nhóm kiểm tra di chuyển/camera và kiểm tra hàm lẻ trong menu. Các chức năng tự động và lưu lựa chọn giữ nguyên.
+Bản v0.1.9 đã bỏ toàn bộ nút TEST, trồng thử một cây, nhóm kiểm tra di chuyển/camera và kiểm tra hàm lẻ trong menu. Các chức năng tự động và lưu lựa chọn giữ nguyên.
 
 Tên cửa sổ/menu: **BOT FARMER X DLee v0.1**.
 
 ## Chạy
 
-Chạy `BOT-FARMER-X-DLee-v0.1.9.exe` (đã kèm DLL/ảnh, không cần quyền quản trị), hoặc giải nén ZIP đầy đủ rồi chạy `autofarmnongtrai-update.exe`.
+Chạy `BOT-FARMER-X-DLee-v0.1.10.exe` (đã kèm DLL/ảnh, không cần quyền quản trị), hoặc giải nén ZIP đầy đủ rồi chạy `autofarmnongtrai-update.exe`.
 Đặt vùng game LDPlayer 960 × 540, bấm **QUET TAT CA LDPLAYER**, chọn đúng tab, chọn chức năng rồi **START BOT**. **STOP BOT** dừng và nhả cần di chuyển.
+
+## Tự đóng thông báo
+
+Khi START BOT đang chạy, bot kiểm tra hộp thoại **Thông báo** trước khi xử lý ảnh ở các bước thu hoạch, mua/bán và trồng. Chỉ nhận thông báo cây chưa đủ lớn để thu hoạch hoặc nhiệm vụ mới/được cập nhật, với nút OK đơn đã nhận dạng. Không bấm OK chỉ vì có một nút màu xanh; kiểm tra tiêu đề/nội dung và loại trừ xác nhận mua/bán.
+
+Bot đợi hộp thoại ổn định, bấm nút thực tế, kiểm tra đã đóng và chờ giao diện farm/balo/cửa hàng sẵn sàng qua hai ảnh. Thử lại tối đa 3 lần, cách nhau ít nhất 3 giây; sau đó tiếp tục chờ game tải trong giới hạn 2 phút, không spam click. STOP dừng việc chờ. Nếu hộp thoại không đóng hoặc game vẫn chưa sẵn sàng thì bot dừng và báo.
+
+Với **cây chưa đủ lớn**, bot thoát danh sách cũ và chờ 30 giây trước lượt thu hoạch tiếp, giữ lựa chọn và cách thu hoạch của bạn. Với **nhiệm vụ mới**, bot đóng OK rồi tiếp tục luồng đang chạy; không phụ thuộc giờ máy hay tự khởi động lại game.
+
+Kiểm tra v0.1.10: 18 kiểm tra thông báo và 40 kiểm tra cấu hình đạt. Đã thử trên LDPlayer với đúng hộp thoại đang kẹt: bot tự đóng OK, thoát danh sách cũ, báo chờ 30 giây và STOP hoạt động. Lựa chọn ban đầu đã được khôi phục nguyên vẹn. Nhận dạng nhiệm vụ mới được kiểm tra qua OCR với ảnh mô phỏng ghi rõ trong tên tệp; chưa thử thông báo thật lúc 7 giờ. Ba ảnh bán/xác nhận/kết quả thực tế của bản trước không bị nhận nhầm thành thông báo này.
 
 ## Auto trồng cây
 

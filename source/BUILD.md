@@ -38,3 +38,10 @@ Kiểm tra sơ đồ vườn, thứ tự/tiêu thụ hạt và tên/số lượn
 ./source/build.ps1 -OpenCvBuild C:/opencv/build -BagTest
 ./bag_test.exe ./source/garden-fixtures ./images
 ```
+
+Kiểm tra thông báo cây chưa lớn, nhiệm vụ mới mô phỏng và tránh nhận nhầm bảng bán:
+
+```powershell
+./source/build.ps1 -OpenCvBuild C:/opencv/build -NoticeTest
+./notice_test.exe ./source/notice-fixtures ./images
+```
