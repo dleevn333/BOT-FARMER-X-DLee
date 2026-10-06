@@ -29,3 +29,12 @@ Kiểm tra OK sau bán bằng ảnh độc lập:
 ./source/build.ps1 -OpenCvBuild C:/opencv/build -SellTest
 ./sell_test.exe ./source/sell-fixtures ./images
 ```
+
+Kiểm tra sơ đồ vườn, thứ tự/tiêu thụ hạt và tên/số lượng trong ảnh balo thật:
+
+```powershell
+./source/build.ps1 -OpenCvBuild C:/opencv/build -GardenTest
+./garden_test.exe ./source/garden-fixtures
+./source/build.ps1 -OpenCvBuild C:/opencv/build -BagTest
+./bag_test.exe ./source/garden-fixtures ./images
+```

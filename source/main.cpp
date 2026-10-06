@@ -17,12 +17,14 @@
 
 
 #include <atomic>
+#include <mutex>
 #include "farm_crop_match.h"
 #include "farm_ocr.h"
 #include "farm_settings.h"
 #include "farm_sell_vision.h"
 #include "farm_plant_vision.h"
 #include "farm_plant_inventory.h"
+#include "farm_garden_plan.h"
 #include <filesystem>
 #include <fstream>
 #include <algorithm>
@@ -128,6 +130,11 @@ struct ThongTinTool {
     int soCayVuaTrong = 0;
     std::string ketQuaTrong = "Chua chay luot trong";
     PlantInventoryCache hatTrongDaNho;
+    PlantBagCursor conTroBalo;
+    GardenPlan soDoVuon;
+    std::string ketQuaBalo="Chua quet hat";
+    std::mutex trongThongTinMutex;
+    std::atomic<int> vuonSoLuong{0},vuonSoDiem{0},vuonDaKiemTra{0},vuonDaTrong{0};
     std::string ketQuaLocTrai;
 
     long long time_cho_hoi_qua = 0;
@@ -4436,7 +4443,7 @@ int main(int, char**) {
                                 luaChonDaDoi |= ImGui::Checkbox("Auto TRONG CAY (hat trong balo)", &tab->kichHoatTrongCay);
                                 if (tab->kichHoatTrongCay) {
                                     ImGui::TextWrapped("Chi trong hat da chon. Khong co trong balo: bo qua. Mua xong hat trong danh sach mua thi trong tiep; khong tu mua loai khac.");
-                                    ImGui::TextWrapped("Quet balo mot luot va nho cac hat. Mua them hat se cap nhat lai; doi hat chi lay theo du lieu da nho.");
+                                    ImGui::TextWrapped("Quet ten, so luong va vi tri hat mot luot. Trong hat dang cam truoc, sau do theo vi tri balo; doi hat khong tim lai toan bo.");
                                     if(ImGui::Button("QUET LAI HAT TRONG BALO",ImVec2(-1,25))) {
                                         tab->dangChay=true;
                                         std::thread([tab](){
@@ -4451,7 +4458,23 @@ int main(int, char**) {
                                         }).detach();
                                     }
                                     ImGui::Text("Balo: %s | So luot quet: %u",tab->hatTrongDaNho.valid?"da nho":"chua quet",tab->hatTrongDaNho.scans.load());
-                                    ImGui::TextWrapped("Luot trong gan nhat: %s",tab->ketQuaTrong.c_str());
+                                    std::string khoHat,luotTrong;
+                                    {std::lock_guard<std::mutex> lock(tab->trongThongTinMutex);khoHat=tab->ketQuaBalo;luotTrong=tab->ketQuaTrong;}
+                                    ImGui::TextWrapped("Luot trong gan nhat: %s",luotTrong.c_str());
+                                    ImGui::Text("Vuon: %d luong | Kiem tra: %d/%d diem | Da trong: %d",tab->vuonSoLuong.load(),tab->vuonDaKiemTra.load(),tab->vuonSoDiem.load(),tab->vuonDaTrong.load());
+                                    if(ImGui::CollapsingHeader("HAT DA NHO TRONG BALO"))ImGui::TextWrapped("%s",khoHat.c_str());
+                                    if(ImGui::Button("QUET SO DO VUON (KHONG TRONG)",ImVec2(-1,25))) {
+                                        tab->dangChay=true;
+                                        std::thread([tab](){GardenSurvey(tab,false);tab->dangChay=false;}).detach();
+                                    }
+                                    if(ImGui::Button("DAT LAI TIEN DO VUON",ImVec2(-1,25))) {
+                                        tab->soDoVuon.Clear();tab->vuonSoLuong=tab->vuonSoDiem=tab->vuonDaKiemTra=tab->vuonDaTrong=0;
+                                        tab->thongBaoStatus="Da dat lai tien do; luot trong sau se khao sat vuon moi";
+                                    }
+                                    if(ImGui::Button("TEST DUONG DI VUON (KHONG TRONG)",ImVec2(-1,25))) {
+                                        tab->dangChay=true;
+                                        std::thread([tab](){GardenTestRoute(tab);tab->dangChay=false;}).detach();
+                                    }
                                     if (ImGui::CollapsingHeader(" DANH SACH HAT TRONG", ImGuiTreeNodeFlags_DefaultOpen)) {
                                         if (ImGui::BeginChild("VungHatTrong", ImVec2(0, 160), true)) {
                                             ImGui::Columns(2, "HatTrongCols");

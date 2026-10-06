@@ -1,10 +1,10 @@
-# BOT FARMER X DLee — v0.1.7
+# BOT FARMER X DLee — v0.1.8
 
 Tên cửa sổ/menu: **BOT FARMER X DLee v0.1**.
 
 ## Chạy
 
-Chạy `BOT-FARMER-X-DLee-v0.1.7.exe` (đã kèm DLL/ảnh, không cần quyền quản trị), hoặc giải nén ZIP đầy đủ rồi chạy `autofarmnongtrai-update.exe`.
+Chạy `BOT-FARMER-X-DLee-v0.1.8.exe` (đã kèm DLL/ảnh, không cần quyền quản trị), hoặc giải nén ZIP đầy đủ rồi chạy `autofarmnongtrai-update.exe`.
 Đặt vùng game LDPlayer 960 × 540, bấm **QUET TAT CA LDPLAYER**, chọn đúng tab, chọn chức năng rồi **START BOT**. **STOP BOT** dừng và nhả cần di chuyển.
 
 ## Auto trồng cây
@@ -14,7 +14,7 @@ Chạy `BOT-FARMER-X-DLee-v0.1.7.exe` (đã kèm DLL/ảnh, không cần quyền
 3. Bot về nông trại của mình, lấy đúng hạt trong balo, đi từ cổng lên luống đất và tìm vị trí có vòng xanh. Đất nâu hoặc vòng đỏ không đủ điều kiện để bấm trồng.
 4. Không có hạt: bỏ qua. Muốn mua rồi trồng: bật **Auto MUA HAT**, chọn hạt trong danh sách mua và đồng thời chọn trong danh sách trồng. Bot chỉ mua các hạt bạn đã chọn; mua xong quay lại vườn trồng.
 
-Mỗi lượt giới hạn 40 cây và thời gian tìm đường, nghỉ ít nhất 60 giây trước lượt tiếp. Bot chỉ tìm đất trong vùng đang nhìn thấy, không đảm bảo phủ toàn bộ vườn có bố cục khác. Nếu không xác nhận được kết quả trồng hoặc bị kẹt, dừng lượt và báo trạng thái.
+Mỗi lượt có giới hạn 240 cây và 10 phút, nghỉ ít nhất 60 giây giữa các lượt. Bot dùng sơ đồ các luống đã khảo sát và giữ tiến độ nếu cần tiếp tục.
 **TRONG THU 1 CAY** chạy một cây trước khi bật liên tục. Nhóm kiểm tra di chuyển có các nút đi 1 giây, lấy hạt, camera gần hơn và đọc vòng xanh/số hạt.
 
 ## Nhớ hạt trong balo
@@ -26,6 +26,18 @@ Mua thêm hạt thành công sẽ làm mới dữ liệu cho lượt trồng ti�
 Nút **QUET LAI HAT TRONG BALO** cập nhật khi bạn tự thay đổi đồ. Dòng **So luot quet** cho biết số lượt quét toàn bộ, không phải số hạt đã chọn. Dữ liệu balo chỉ nhớ trong lần chạy hiện tại; mỗi lần START hoặc mở lại EXE sẽ kiểm tra tồn kho mới. Danh sách đã chọn vẫn tự lưu như trước.
 
 Bot đợi ảnh hạt và vị trí thẻ ổn định sau khi mở/cuộn balo. Ảnh hạt nhỏ được đối chiếu thêm ở các mức phóng gần nhất, giữ nguyên ngưỡng xác nhận để tránh chọn nhầm loại. Gói chưa nhận ra được kiểm tra lại trên cùng trang trước khi kết thúc lượt quét.
+
+## Trồng theo sơ đồ vườn và quản lý hạt
+
+Bot đọc tên, ảnh, số lượng và vị trí gói hạt trong tab Hạt giống của My Farm. Quét hết danh sách một lượt; không lấy công cụ hoặc trái làm hạt. Số lượng chưa đọc được hiện `?`, không đoán thành 0. Khi đổi hạt, kiểm tra trang đang mở và bấm vị trí đã nhớ, xác nhận đúng hạt trong tay. Mua thêm/START/quét thủ công cập nhật balo; gói dùng hết được cập nhật riêng, giữ dữ liệu các gói còn lại.
+
+Hạt đang cầm và được chọn trồng trước; các hạt có sẵn còn lại theo thứ tự vị trí trong balo để giảm đi lại giữa các trang. Hạt thiếu/chưa đọc rõ được báo và bỏ qua. Chỉ mua các hạt trong danh sách mua của bạn khi Auto MUA HAT bật.
+
+Trước lượt trồng, bot về cổng vườn để xác định điểm gốc, khảo sát ranh giới các luống dọc lối giữa và lập đường đi qua từng luống. Bot giữ nguyên góc camera đã khảo sát, xác minh lại vị trí ở cổng vườn rồi theo dõi dịch chuyển mặt đất để giữ tọa độ sơ đồ. Có chuẩn hóa độ sáng khi trời chuyển tối/mưa. Đổi loại hạt tiếp tục trên sơ đồ hiện tại; không về nhà cho từng hạt. Chỉ trồng khi thấy vòng xanh hợp lệ và xác nhận hạt đã tiêu thụ. Điểm không phù hợp với một loại vẫn có thể thử loại khác; điểm đã trồng được bỏ qua.
+
+**QUET SO DO VUON (KHONG TRONG)** khảo sát và hiển thị số luống/điểm; **TRONG THU 1 CAY** kiểm tra thật; **DAT LAI TIEN DO VUON** bỏ tiến độ khi bạn đổi bố cục. Dòng Vườn hiển thị số luống, điểm đã kiểm tra và cây đã xác nhận. **HAT DA NHO TRONG BALO** xem các loại/số lượng đã đọc.
+
+Mỗi lượt có giới hạn 10 phút và 240 cây, giữ tiến độ khi cần tiếp tục. Nếu mất dấu camera, bot thử khảo sát lại một lần; vẫn không định vị được thì dừng lượt và báo. Không tự lưu/chỉnh sửa đồ đạc khi game đang trong chế độ chỉnh sửa vườn. Cần ranh giới luống nhìn thấy và lối đi có thể tiếp cận; không đảm bảo nhận đúng mọi bố cục khác.
 
 ## Sửa trồng trong hiệu ứng thời tiết
 
@@ -58,7 +70,12 @@ Chế độ **Chon trai** đọc riêng tên trong từng ô nông sản, nhận
 Lần đầu mọi lựa chọn đều trống. Mỗi thay đổi tự lưu theo tên tab LDPlayer; nút **LUU LUA CHON** lưu thủ công. Lần sau mở/quét lại khôi phục nhưng không tự START. Dữ liệu ở `%LOCALAPPDATA%/BOT FARMER X DLee/settings`, giữ được qua các bản EXE. Đọc được cấu hình v0.1.1; chức năng trồng mới mặc định tắt.
 Giữ thu hoạch Tên Tím, thu hoạch thường qua nút Thu hoạch, bỏ cuộn tìm trái bị ẩn, mua hạt/công cụ và bán tùy chọn.
 
-## Kiểm tra
+## Kiểm tra v0.1.8
 
-40 kiểm tra lưu cấu hình/chuyển dữ liệu và 130 kiểm tra nhận diện/bộ nhớ balo đã đạt. Kiểm tra đủ 12 gói hạt trong ảnh lọc, bộ nhớ dùng chung cho nhiều hạt có/thiếu, lượt tiếp theo, mua thêm, dùng hết, đổi tab và lượt quét chưa hoàn tất. Luồng trồng đã được thử trên LDPlayer ở v0.1.2; lần cập nhật này kiểm tra việc quét/lấy nhiều loại hạt trực tiếp, không thử lại toàn bộ mua/bán.
+145 kiểm tra sơ đồ/di chuyển/bộ nhớ hạt, 55 kiểm tra balo thật, 136 kiểm tra nhận diện trồng và 40 kiểm tra cấu hình đã đạt.
+
+Đã thử trực tiếp trên LDPlayer: khảo sát và đi đến đủ 8/8 luống của vườn hiện tại, không mua hay trồng trong lượt kiểm tra đường đi. Quét balo một lượt, nhớ 12 loại hạt; trồng thử 1 cây Bắp rồi đổi sang Cà rốt và trồng thêm 1 cây. Bộ đếm quét toàn bộ vẫn là 1. Bắp cập nhật 4 → 3, Cà rốt 15 → 14; hai loại được chọn nhưng thiếu (Nho, Dưa) được bỏ qua. Tiến độ giữ 2 cây đã xác nhận. Lựa chọn ban đầu được khôi phục và đối chiếu nguyên vẹn.
+
+Không thử lại toàn bộ giao dịch mua/bán và thu hoạch trong lần cập nhật này. Nhận diện ranh giới cần luống nhìn thấy và đường đi tiếp cận được; kết quả trên vườn hiện tại không chứng minh mọi bố cục khác đều hoạt động.
+
 Mã nguồn/build ở `source`, tài nguyên ở `images`, giấy phép thư viện ở `licenses`. `SHA256SUMS.txt` đối chiếu ZIP; `.exe.sha256` đối chiếu EXE một file.
