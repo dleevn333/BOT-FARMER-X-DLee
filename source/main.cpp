@@ -4355,45 +4355,6 @@ int main(int, char**) {
                                     ImGui::PopStyleColor();
                                 }
                                 ImGui::Separator();
-                                if (!tab->dangChay && ImGui::Button("TEST MO THU HOACH MOI", ImVec2(-1, 28))) {
-                                    tab->dangChay = true;
-                                    thread([tab]() { FarmOpenHarvest(tab); tab->dangChay = false; }).detach();
-                                }
-                                if (!tab->dangChay && ImGui::Button("TEST LOC TRAI DA CHON", ImVec2(-1, 28))) {
-                                    tab->dangChay=true;
-                                    thread([tab](){FarmPrepareHarvestFilter(tab,false);tab->dangChay=false;}).detach();
-                                }
-                                if (!tab->dangChay && ImGui::Button("TEST THU HOACH DA CHON", ImVec2(-1, 28))) {
-                                    tab->time_cho_hoi_qua = 0;
-                                    tab->dangChay = true;
-                                    thread([tab]() { ThuHoachTenTim(tab); tab->dangChay = false; }).detach();
-                                }
-
-                                if (!tab->dangChay && ImGui::Button("TEST MO CUA HANG HAT", ImVec2(-1, 25))) {
-                                    tab->dangChay = true;
-                                    thread([tab]() { FarmOpenSeedShop(tab); tab->dangChay = false; }).detach();
-                                }
-                                if (!tab->dangChay && ImGui::Button("TEST MUA HAT DA CHON", ImVec2(-1, 25))) {
-                                    tab->dangChay = true;
-                                    thread([tab]() { ThucHienMuaHat(tab); tab->dangChay = false; }).detach();
-                                }
-                                if (!tab->dangChay && ImGui::Button("TEST MO SHOP CONG CU", ImVec2(-1, 25))) {
-                                    tab->dangChay = true;
-                                    thread([tab]() { FarmOpenStore(tab, 1); tab->dangChay = false; }).detach();
-                                }
-                                if (!tab->dangChay && ImGui::Button("TEST MO BANG BAN", ImVec2(-1, 25))) {
-                                    tab->dangChay = true;
-                                    thread([tab]() { FarmOpenStore(tab, 2); tab->dangChay = false; }).detach();
-                                }
-                                if (!tab->dangChay && ImGui::Button("TEST DONG OK SAU BAN", ImVec2(-1, 25))) {
-                                    tab->dangChay=true;
-                                    thread([tab](){FarmDismissCompletedSale(tab);tab->dangChay=false;}).detach();
-                                }
-                                if (!tab->dangChay && ImGui::Button("TEST BAN TU DONG", ImVec2(-1, 25))) {
-                                    tab->dangChay=true;
-                                    thread([tab](){ThucHienDiBan(tab);tab->dangChay=false;}).detach();
-                                }
-
                                 // --- CẤU HÌNH FARM ---
                                 luaChonDaDoi |= ImGui::Checkbox("Auto BAN (sau thu hoach / khi day tui)", &tab->kichHoatBan);
                                 luaChonDaDoi |= ImGui::Checkbox("Auto THU HOACH (TEN TIM / thuong)", &tab->kichHoatThuHoachNhanh);
@@ -4463,17 +4424,9 @@ int main(int, char**) {
                                     ImGui::TextWrapped("Luot trong gan nhat: %s",luotTrong.c_str());
                                     ImGui::Text("Vuon: %d luong | Kiem tra: %d/%d diem | Da trong: %d",tab->vuonSoLuong.load(),tab->vuonDaKiemTra.load(),tab->vuonSoDiem.load(),tab->vuonDaTrong.load());
                                     if(ImGui::CollapsingHeader("HAT DA NHO TRONG BALO"))ImGui::TextWrapped("%s",khoHat.c_str());
-                                    if(ImGui::Button("QUET SO DO VUON (KHONG TRONG)",ImVec2(-1,25))) {
-                                        tab->dangChay=true;
-                                        std::thread([tab](){GardenSurvey(tab,false);tab->dangChay=false;}).detach();
-                                    }
                                     if(ImGui::Button("DAT LAI TIEN DO VUON",ImVec2(-1,25))) {
                                         tab->soDoVuon.Clear();tab->vuonSoLuong=tab->vuonSoDiem=tab->vuonDaKiemTra=tab->vuonDaTrong=0;
                                         tab->thongBaoStatus="Da dat lai tien do; luot trong sau se khao sat vuon moi";
-                                    }
-                                    if(ImGui::Button("TEST DUONG DI VUON (KHONG TRONG)",ImVec2(-1,25))) {
-                                        tab->dangChay=true;
-                                        std::thread([tab](){GardenTestRoute(tab);tab->dangChay=false;}).detach();
                                     }
                                     if (ImGui::CollapsingHeader(" DANH SACH HAT TRONG", ImGuiTreeNodeFlags_DefaultOpen)) {
                                         if (ImGui::BeginChild("VungHatTrong", ImVec2(0, 160), true)) {
@@ -4487,44 +4440,6 @@ int main(int, char**) {
                                             ImGui::Columns(1);
                                         }
                                         ImGui::EndChild();
-                                    }
-                                    if (ImGui::Button("TRONG THU 1 CAY", ImVec2(-1, 28))) {
-                                        tab->dangChay = true;
-                                        std::thread([tab]() {FarmPlantSelected(tab,1);tab->dangChay=false;}).detach();
-                                    }
-                                    if (ImGui::CollapsingHeader("KIEM TRA TRONG CAY / DI CHUYEN")) {
-                                        auto moveButton=[&](const char* label,cv::Point2d direction) {
-                                            if(ImGui::Button(label,ImVec2(132,25))) {
-                                                tab->dangChay=true;
-                                                std::thread([tab,direction]() {PlantMove(tab,direction,1000);tab->thongBaoStatus="Da di chuyen 1 giay";tab->dangChay=false;}).detach();
-                                            }
-                                        };
-                                        moveButton("LEN 1 GIAY",{0,-1});ImGui::SameLine();
-                                        moveButton("XUONG 1 GIAY",{0,1});ImGui::SameLine();
-                                        moveButton("TRAI 1 GIAY",{-1,0});ImGui::SameLine();
-                                        moveButton("PHAI 1 GIAY",{1,0});
-                                        if(ImGui::Button("CAM HAT DA CHON",ImVec2(-1,25))) {
-                                            tab->dangChay=true;
-                                            std::thread([tab]() {
-                                                bool equipped=false;
-                                                if(PlantEnsureInventory(tab))for(int h=0;h<SO_HAT_TRONG && tab->dangChay;++h)if(tab->cacHatCanTrong[h]&&PlantEquipSeed(tab,h)){equipped=true;break;}
-                                                PlantCloseBag(tab);
-                                                tab->thongBaoStatus=equipped?"Da cam dung hat trong":"Khong co hat da chon trong balo";
-                                                tab->dangChay=false;
-                                            }).detach();
-                                        }
-                                        if(ImGui::Button("CAMERA GAN HON",ImVec2(-1,25))) {
-                                            tab->dangChay=true;
-                                            std::thread([tab](){PlantCameraCloser(tab);tab->dangChay=false;}).detach();
-                                        }
-                                        if(ImGui::Button("DOC VI TRI TRONG",ImVec2(-1,25))) {
-                                            tab->dangChay=true;
-                                            std::thread([tab](){
-                                                auto frame=PlantFrame(tab);auto ring=PlantFindValidRing(frame);int seed=PlantHeldSeed(frame);
-                                                tab->thongBaoStatus="Hat="+(seed<0?std::string("?"):std::string(ds_hat_trong[seed]))+"; con="+std::to_string(PlantSeedCount(frame))+"; vong xanh="+std::to_string(ring.center.x)+","+std::to_string(ring.center.y);
-                                                tab->dangChay=false;
-                                            }).detach();
-                                        }
                                     }
                                 }
                                 ImGui::EndDisabled();
@@ -4689,106 +4604,6 @@ int main(int, char**) {
 
                                     ImGui::Separator();
 
-                                    // 2. KHỐI DANH SÁCH CÁC NÚT BẤM VÀO HÀM TEST LẺ (Gom cụm để UI scannable)
-                                    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.2f, 0.3f, 0.4f, 1.0f));
-                                    if (ImGui::CollapsingHeader("DANH SACH KIEM TRA HE THONG / TEST HAM LE")) {
-                                        ImGui::PopStyleColor();
-
-                                        if (ImGui::Button("Check Thoi Tiet Phu", ImVec2(-1, 35))) {
-                                            tab->dangChay = true;
-                                            tab->thongBaoStatus = "Dang chay BAM TIA ESP...";
-                                            std::thread(CheckThoiTietVaViTri, tab).detach();
-                                        }
-                                        if (ImGui::Button("TEST ZOOM MÀN HÌNH", ImVec2(-1, 35))) {
-                                            std::thread([tab]() {
-                                                bool trangThaiCu = tab->dangChay; tab->dangChay = true;
-                                                ZoomNhoManHinh_SieuMuot1(tab);
-                                                tab->dangChay = trangThaiCu;
-                                                }).detach();
-                                        }
-                                        if (ImGui::Button("TEST Setup Cau Ca KND", ImVec2(-1, 35))) {
-                                            std::thread([tab]() {
-                                                bool trangThaiCu = tab->dangChay; tab->dangChay = true;
-                                                SetUpCauCaMapKnd(tab);
-                                                tab->dangChay = trangThaiCu;
-                                                }).detach();
-                                        }
-                                        if (ImGui::Button("TEST Setup Cau Ca Plaza", ImVec2(-1, 35))) {
-                                            std::thread([tab]() {
-                                                bool trangThaiCu = tab->dangChay; tab->dangChay = true;
-                                                SetUpCauMapPlazaHaiDang(tab);
-                                                tab->dangChay = trangThaiCu;
-                                                }).detach();
-                                        }
-                                        if (ImGui::Button("TEST Setup Cau Ca KTT", ImVec2(-1, 35))) {
-                                            std::thread([tab]() {
-                                                bool trangThaiCu = tab->dangChay; tab->dangChay = true;
-                                                SetUpCauMapKtt(tab);
-                                                tab->dangChay = trangThaiCu;
-                                                }).detach();
-                                        }
-                                        if (ImGui::Button("TEST Setup Cau Ca Home", ImVec2(-1, 35))) {
-                                            std::thread([tab]() {
-                                                bool trangThaiCu = tab->dangChay; tab->dangChay = true;
-                                                SetUpCauCaMapHome(tab);
-                                                tab->dangChay = trangThaiCu;
-                                                }).detach();
-                                        }
-                                        if (ImGui::Button("TEST Check Can Cau HSV", ImVec2(-1, 35))) {
-                                            std::thread([tab]() {
-                                                bool trangThaiCu = tab->dangChay; tab->dangChay = true;
-                                                CheckTrangThaiCanCau_HSV_TestLoop(tab);
-                                                tab->dangChay = trangThaiCu;
-                                                }).detach();
-                                        }
-                                        if (ImGui::Button("TEST ChuyenSangMapKND", ImVec2(-1, 35))) {
-                                            std::thread([tab]() {
-                                                bool trangThaiCu = tab->dangChay; tab->dangChay = true;
-                                                ChuyenSangMapKND(tab);
-                                                tab->dangChay = trangThaiCu;
-                                                }).detach();
-                                        }
-                                        if (ImGui::Button("TEST KiemTraLaiViTri", ImVec2(-1, 35))) {
-                                            std::thread([tab]() {
-                                                bool trangThaiCu = tab->dangChay; tab->dangChay = true;
-                                                KiemTraLaiViTri(tab);
-                                                tab->dangChay = trangThaiCu;
-                                                }).detach();
-                                        }
-                                        if (ImGui::Button("TEST ChuyenToiMapKtt", ImVec2(-1, 35))) {
-                                            std::thread([tab]() {
-                                                bool trangThaiCu = tab->dangChay; tab->dangChay = true;
-                                                ChuyenToiMapKtt(tab);
-                                                tab->dangChay = trangThaiCu;
-                                                }).detach();
-                                        }
-                                        if (ImGui::Button("TEST ChuyenToiMapPlaza", ImVec2(-1, 35))) {
-                                            std::thread([tab]() {
-                                                bool trangThaiCu = tab->dangChay; tab->dangChay = true;
-                                                ChuyenToiMapPlaza(tab);
-                                                tab->dangChay = trangThaiCu;
-                                                }).detach();
-                                        }
-                                        if (ImGui::Button("TEST ChuyenVeMapHome", ImVec2(-1, 35))) {
-                                            std::thread([tab]() {
-                                                bool trangThaiCu = tab->dangChay; tab->dangChay = true;
-                                                ChuyenVeMapHome(tab);
-                                                tab->dangChay = trangThaiCu;
-                                                }).detach();
-                                        }
-
-                                        //giulaicacanthiet
-                                        if (ImGui::Button("TEST giu ca bien the", ImVec2(-1, 35))) {
-                                            std::thread([tab]() {
-                                                bool trangThaiCu = tab->dangChay; tab->dangChay = true;
-                                                giulaicacanthiet(tab);
-                                                tab->dangChay = trangThaiCu;
-                                                }).detach();
-                                        }
-                                    }
-                                    else {
-                                        ImGui::PopStyleColor();
-                                    }
                                 }
                                 else {
                                     // Nếu bot đang chạy (bất kỳ chế độ nào), hiện nút STOP chung để dừng hẳn

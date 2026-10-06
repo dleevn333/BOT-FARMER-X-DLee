@@ -1,19 +1,19 @@
 # BOT FARMER X DLee
 
-Auto nông trại cho LDPlayer, Windows 11/10 x64. Menu **BOT FARMER X DLee v0.1**, bản mới **v0.1.8**.
+Auto nông trại cho LDPlayer, Windows 11/10 x64. Menu **BOT FARMER X DLee v0.1**, bản mới **v0.1.9**.
 
-[Tải EXE v0.1.8](https://github.com/dleevn333/BOT-FARMER-X-DLee/releases/download/v0.1.8/BOT-FARMER-X-DLee-v0.1.8.exe) · [Bản phát hành](https://github.com/dleevn333/BOT-FARMER-X-DLee/releases/tag/v0.1.8)
+[Tải EXE v0.1.9](https://github.com/dleevn333/BOT-FARMER-X-DLee/releases/download/v0.1.9/BOT-FARMER-X-DLee-v0.1.9.exe) · [Bản phát hành](https://github.com/dleevn333/BOT-FARMER-X-DLee/releases/tag/v0.1.9)
 
 - Làm lại trồng theo sơ đồ nhiều luống, đi từ gần cổng lên trên, đo chuyển động từng bước và giữ điểm đã kiểm tra/đã trồng. Chỉ trồng khi vòng xanh hợp lệ và kết quả được xác nhận.
 - Quét toàn bộ hạt một lượt, nhớ tên/ảnh/số lượng/trang/vị trí. Đổi hạt dùng vị trí đã nhớ và xác nhận đúng gói; thiếu bỏ qua. Số lượng chưa rõ hiện `?`.
 - Chọn riêng 34 hạt trồng. Auto mua chỉ theo danh sách mua đã chọn; mua thêm cập nhật kho rồi tiếp tục trồng.
-- Có nút quét vườn, thử đường đi không trồng, trồng thử một cây, đặt lại tiến độ và xem kho hạt đã nhớ.
+- Bỏ các nút TEST và công cụ thử thủ công khỏi menu; giữ cập nhật kho hạt, đặt lại tiến độ vườn và xem thông tin trồng.
 - Giữ thu hoạch Tên Tím/thu thường, lọc trái bị ẩn không cuộn, sửa OK sau bán và mua hạt/công cụ tùy chọn.
 - Lần đầu không tự tick. Lưu/khôi phục lựa chọn theo tab LDPlayer; mở lại không tự START.
 
 Chạy EXE một file đã kèm thư viện và ảnh, hoặc giải nén ZIP đầy đủ. Đặt vùng game 960 × 540, quét LDPlayer và chọn đúng tab. Lúc khảo sát đầu tiên hãy để cửa sổ bot/LDPlayer được chọn để chỉnh camera; các lượt dùng sơ đồ đã định vị. STOP nhả cần di chuyển.
 
-## Kiểm tra v0.1.8
+## Kiểm tra luồng ở v0.1.8
 
 145 kiểm tra sơ đồ/di chuyển/bộ nhớ hạt, 55 kiểm tra balo thật, 136 kiểm tra nhận diện trồng và 40 kiểm tra cấu hình đã đạt.
 

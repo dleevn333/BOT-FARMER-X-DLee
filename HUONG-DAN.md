@@ -1,10 +1,12 @@
-# BOT FARMER X DLee — v0.1.8
+# BOT FARMER X DLee — v0.1.9
+
+Bản v0.1.9 bỏ toàn bộ nút TEST, trồng thử một cây, nhóm kiểm tra di chuyển/camera và kiểm tra hàm lẻ trong menu. Các chức năng tự động và lưu lựa chọn giữ nguyên.
 
 Tên cửa sổ/menu: **BOT FARMER X DLee v0.1**.
 
 ## Chạy
 
-Chạy `BOT-FARMER-X-DLee-v0.1.8.exe` (đã kèm DLL/ảnh, không cần quyền quản trị), hoặc giải nén ZIP đầy đủ rồi chạy `autofarmnongtrai-update.exe`.
+Chạy `BOT-FARMER-X-DLee-v0.1.9.exe` (đã kèm DLL/ảnh, không cần quyền quản trị), hoặc giải nén ZIP đầy đủ rồi chạy `autofarmnongtrai-update.exe`.
 Đặt vùng game LDPlayer 960 × 540, bấm **QUET TAT CA LDPLAYER**, chọn đúng tab, chọn chức năng rồi **START BOT**. **STOP BOT** dừng và nhả cần di chuyển.
 
 ## Auto trồng cây
@@ -15,7 +17,7 @@ Chạy `BOT-FARMER-X-DLee-v0.1.8.exe` (đã kèm DLL/ảnh, không cần quyền
 4. Không có hạt: bỏ qua. Muốn mua rồi trồng: bật **Auto MUA HAT**, chọn hạt trong danh sách mua và đồng thời chọn trong danh sách trồng. Bot chỉ mua các hạt bạn đã chọn; mua xong quay lại vườn trồng.
 
 Mỗi lượt có giới hạn 240 cây và 10 phút, nghỉ ít nhất 60 giây giữa các lượt. Bot dùng sơ đồ các luống đã khảo sát và giữ tiến độ nếu cần tiếp tục.
-**TRONG THU 1 CAY** chạy một cây trước khi bật liên tục. Nhóm kiểm tra di chuyển có các nút đi 1 giây, lấy hạt, camera gần hơn và đọc vòng xanh/số hạt.
+Chọn chức năng/hạt rồi bấm **START BOT**; bot tự quét balo và khảo sát vườn khi cần.
 
 ## Nhớ hạt trong balo
 
@@ -35,7 +37,7 @@ Hạt đang cầm và được chọn trồng trước; các hạt có sẵn cò
 
 Trước lượt trồng, bot về cổng vườn để xác định điểm gốc, khảo sát ranh giới các luống dọc lối giữa và lập đường đi qua từng luống. Bot giữ nguyên góc camera đã khảo sát, xác minh lại vị trí ở cổng vườn rồi theo dõi dịch chuyển mặt đất để giữ tọa độ sơ đồ. Có chuẩn hóa độ sáng khi trời chuyển tối/mưa. Đổi loại hạt tiếp tục trên sơ đồ hiện tại; không về nhà cho từng hạt. Chỉ trồng khi thấy vòng xanh hợp lệ và xác nhận hạt đã tiêu thụ. Điểm không phù hợp với một loại vẫn có thể thử loại khác; điểm đã trồng được bỏ qua.
 
-**QUET SO DO VUON (KHONG TRONG)** khảo sát và hiển thị số luống/điểm; **TRONG THU 1 CAY** kiểm tra thật; **DAT LAI TIEN DO VUON** bỏ tiến độ khi bạn đổi bố cục. Dòng Vườn hiển thị số luống, điểm đã kiểm tra và cây đã xác nhận. **HAT DA NHO TRONG BALO** xem các loại/số lượng đã đọc.
+**DAT LAI TIEN DO VUON** bỏ tiến độ khi bạn đổi bố cục; bot tự khảo sát lại trong lượt trồng tiếp theo. Dòng Vườn hiển thị số luống, điểm đã kiểm tra và cây đã xác nhận. **HAT DA NHO TRONG BALO** xem các loại/số lượng đã đọc.
 
 Mỗi lượt có giới hạn 10 phút và 240 cây, giữ tiến độ khi cần tiếp tục. Nếu mất dấu camera, bot thử khảo sát lại một lần; vẫn không định vị được thì dừng lượt và báo. Không tự lưu/chỉnh sửa đồ đạc khi game đang trong chế độ chỉnh sửa vườn. Cần ranh giới luống nhìn thấy và lối đi có thể tiếp cận; không đảm bảo nhận đúng mọi bố cục khác.
 
@@ -53,7 +55,6 @@ START cho lượt trồng hạt có sẵn chạy trước thu hoạch/mua hàng;
 
 Bot nhận riêng hộp thoại **Hoàn tất bán hàng** và ảnh OK mới. Chỉ hoàn tất lượt bán khi hộp thoại đóng và bảng bán sáng trở lại; nếu click bị mất trong lúc chuyển cảnh thì thử lại có giới hạn. Khi mở chức năng tiếp theo, bot cũng xử lý hộp thoại bán đang còn kẹt.
 
-**TEST DONG OK SAU BAN** chỉ đóng hộp thoại hoàn tất bán. **TEST BAN TU DONG** chạy luồng bán thật theo cách chọn tự động của game. Hai nút chỉ xuất hiện khi bot đang dừng.
 
 15 kiểm tra ảnh bán/OK đạt, gồm tái hiện mẫu OK cũ bị bỏ sót, phân biệt xác nhận bán, đối chiếu bảng bán sau khi đóng OK và tránh coi bảng bán bị làm tối phía sau hộp thoại là đã xong. Đã thử trên LDPlayer: đóng hộp thoại kết quả đang kẹt và chạy toàn bộ luồng bán tự động, tự xác nhận bán/OK rồi thoát về màn hình game.
 
@@ -61,7 +62,6 @@ Bot nhận riêng hộp thoại **Hoàn tất bán hàng** và ảnh OK mới. C
 
 Chế độ **Chon trai** đọc riêng tên trong từng ô nông sản, nhận tên xuống dòng, bỏ dấu tiếng Việt và xử lý lỗi OCR nhỏ khi chỉ có một loại phù hợp. Không dùng khớp một phần để biến Dưa hấu thành Dưa hoặc Táo đường thành Táo. Vị trí bấm/dấu tick lấy từ ô thực tế, rồi kiểm tra đã tick trước khi áp dụng.
 
-**TEST LOC TRAI DA CHON** chỉ thiết lập các dấu tick và để bộ lọc mở cho bạn xem, không bấm thu hoạch hoặc bán. **TEST THU HOACH DA CHON** chạy thu hoạch thật. Dòng trạng thái ghi số loại chọn thành công/tổng loại yêu cầu và tên chưa chọn được. Các trái bị game ẩn vẫn bỏ qua, không cuộn tìm; giữ cách thu Tên Tím hoặc thu thường theo lựa chọn của bạn.
 
 153 kiểm tra tên/lỗi OCR/vị trí ô đã đạt, gồm đọc Bắp, Dâu tây, Nho từ ảnh lọc thực tế và Trăng khuyết/Nhân sâm từ ảnh trước. Đã đối chiếu dấu tick nhiều loại trên LDPlayer và thu riêng Nho bằng Tên Tím thành công; Bắp 14, Dâu tây 3 và Rau xà lách 3 giữ nguyên sau lượt thử. Không thử thu hoạch thật toàn bộ 31 loại hoặc thử lại giao dịch mua/bán trong bản này.
 
@@ -70,7 +70,7 @@ Chế độ **Chon trai** đọc riêng tên trong từng ô nông sản, nhận
 Lần đầu mọi lựa chọn đều trống. Mỗi thay đổi tự lưu theo tên tab LDPlayer; nút **LUU LUA CHON** lưu thủ công. Lần sau mở/quét lại khôi phục nhưng không tự START. Dữ liệu ở `%LOCALAPPDATA%/BOT FARMER X DLee/settings`, giữ được qua các bản EXE. Đọc được cấu hình v0.1.1; chức năng trồng mới mặc định tắt.
 Giữ thu hoạch Tên Tím, thu hoạch thường qua nút Thu hoạch, bỏ cuộn tìm trái bị ẩn, mua hạt/công cụ và bán tùy chọn.
 
-## Kiểm tra v0.1.8
+## Kiểm tra luồng ở v0.1.8
 
 145 kiểm tra sơ đồ/di chuyển/bộ nhớ hạt, 55 kiểm tra balo thật, 136 kiểm tra nhận diện trồng và 40 kiểm tra cấu hình đã đạt.
 
